@@ -3,250 +3,524 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebCast TV 4.0.0 (Philco Legacy Edition)</title>
+    <title>WebCast TV 4.0.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background-color: #0f172a; color: #ffffff; font-family: Arial, sans-serif; text-align: center; }
-        
-        /* HEADER */
-        .header { background: #1e293b; padding: 15px; border-bottom: 2px solid #334155; }
-        .header h1 { font-size: 20px; color: #3b82f6; }
-        .mode-btn { background: #334155; color: #fff; border: none; padding: 8px 12px; margin: 2px; border-radius: 4px; cursor: pointer; font-size: 12px; }
-        .mode-btn.active { background: #2563eb; font-weight: bold; }
-
-        /* CONTAINERS */
-        .container { max-width: 800px; margin: 20px auto; padding: 15px; }
-        .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-        
-        /* TV SCREEN (PHILCO FRIENDLY) */
-        .tv-screen { background: #000; border: 3px solid #3b82f6; min-height: 400px; border-radius: 12px; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; position: relative; }
-        .pin-box { background: #0f172a; border: 2px solid #3b82f6; color: #60a5fa; font-size: 45px; font-weight: bold; letter-spacing: 8px; padding: 15px 30px; border-radius: 10px; margin: 20px 0; }
-        
-        /* BUTTONS & INPUTS */
-        .btn { background: #2563eb; color: #fff; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; width: 100%; max-width: 300px; margin: 5px 0; }
-        .btn-success { background: #16a34a; }
-        .input-code { background: #0f172a; border: 2px solid #334155; color: #fff; font-size: 24px; text-align: center; padding: 10px; border-radius: 8px; width: 100%; max-width: 250px; letter-spacing: 4px; margin-bottom: 10px; }
-        
-        /* PLAYER */
-        video { width: 100%; max-height: 400px; background: #000; border-radius: 8px; }
-        .hidden { display: none !important; }
-        .status-on { color: #4ade80; font-weight: bold; }
-        .status-off { color: #f87171; font-weight: bold; }
+        body { background-color: #0f172a; color: #f8fafc; font-family: ui-sans-serif, system-ui, sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col">
 
-    <!-- BARRA SUPERIOR -->
-    <div class="header">
-        <h1>WebCast TV v4.0.0</h1>
-        <div style="margin-top: 10px;">
-            <button class="mode-btn active" id="btn-mobile" onclick="setMode('mobile')">📱 Celular (Controle)</button>
-            <button class="mode-btn" id="btn-tv" onclick="setMode('tv')">📺 TV Philco</button>
-        </div>
-    </div>
-
-    <div class="container">
-
-        <!-- ========================================== -->
-        <!-- 1. MODO PAINEL MOBILE (CELULAR)            -->
-        <!-- ========================================== -->
-        <div id="view-mobile" class="card">
-            <h2>Controle do Celular</h2>
-            <p style="font-size: 12px; color: #94a3b8; margin-top: 5px;">Status da TV: <span id="mobile-status" class="status-off">Desconectada</span></p>
-
-            <!-- CONECTAR PIN -->
-            <div id="mobile-connect-box" style="margin: 20px 0;">
-                <p style="margin-bottom: 10px;">Digite o PIN de 6 dígitos que está na tela da TV Philco:</p>
-                <input type="number" id="input-pin" class="input-code" placeholder="000000">
-                <br>
-                <button class="btn" onclick="connectMobileToTV()">Conectar à TV Philco</button>
+    <header class="bg-slate-900 border-b border-slate-800 p-4 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-tv text-blue-500 text-2xl"></i>
+                <h1 class="text-xl font-bold tracking-wider">WebCast <span class="text-blue-500">TV</span> <span class="text-xs bg-blue-900/60 text-blue-300 px-2 py-0.5 rounded">v4.0.0</span></h1>
             </div>
-
-            <!-- CONTROLE REMOTO (EXIBIDO APÓS CONECTAR) -->
-            <div id="mobile-remote-box" class="hidden" style="margin-top: 20px;">
-                <div style="background: #0f172a; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                    <p style="font-size: 12px; color: #94a3b8;">Vídeo Selecionado:</p>
-                    <p id="current-video-title" style="font-weight: bold;">Nenhum vídeo em execução</p>
-                </div>
-
-                <h3>Comandos de Reprodução</h3>
-                <div style="margin: 15px 0;">
-                    <button class="btn" onclick="sendTVCommand('PLAY_PAUSE')" style="width: 48%; inline-block;">▶/⏸ Play/Pause</button>
-                    <button class="btn" onclick="sendTVCommand('STOP')" style="width: 48%; inline-block; background: #dc2626;">⏹ Parar</button>
-                </div>
-
-                <h3>Enviar Vídeo de Teste para a TV</h3>
-                <button class="btn btn-success" onclick="sendTestVideo('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4', 'Filme Sintel (720p)')">🎬 Enviar Vídeo 1 (Sintel)</button>
-                <button class="btn btn-success" onclick="sendTestVideo('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4', 'Big Buck Bunny')">🎬 Enviar Vídeo 2 (Bunny)</button>
-            </div>
-        </div>
-
-        <!-- ========================================== -->
-        <!-- 2. MODO SMART TV PHILCO (BIG SCREEN)       -->
-        <!-- ========================================== -->
-        <div id="view-tv" class="tv-screen hidden">
             
-            <!-- TELA DE AGUARDANDO CONEXÃO -->
-            <div id="tv-standby">
-                <h2 style="font-size: 24px; color: #60a5fa;">WEBCAST TV PHILCO</h2>
-                <p style="color: #94a3b8; margin-top: 10px;">Digite este PIN no seu celular para conectar:</p>
-                
-                <div class="pin-box" id="tv-pin-display">------</div>
-                
-                <p id="tv-status-msg" style="font-size: 14px; color: #e2e8f0;">Aguardando conexão do celular...</p>
-            </div>
-
-            <!-- PLAYER DE VÍDEO DA TV -->
-            <div id="tv-player-box" class="hidden" style="width: 100%;">
-                <h3 id="tv-playing-title" style="margin-bottom: 10px; color: #60a5fa;">Reproduzindo...</h3>
-                <video id="philco-video-element" controls preload="auto">
-                    Seu navegador Android 4.0 não suporta a tag de vídeo.
-                </video>
+            <div class="flex bg-slate-800 p-1 rounded-lg text-sm border border-slate-700">
+                <button onclick="switchView('mobile')" id="btn-view-mobile" class="px-3 py-1.5 rounded-md font-medium transition-all bg-blue-600 text-white">
+                    <i class="fa-solid fa-mobile-screen mr-1.5"></i> Telemóvel
+                </button>
+                <button onclick="switchView('tv')" id="btn-view-tv" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition-all">
+                    <i class="fa-solid fa-tv mr-1.5"></i> Interface TV
+                </button>
+                <button onclick="switchView('desktop')" id="btn-view-desktop" class="px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition-all">
+                    <i class="fa-solid fa-desktop mr-1.5"></i> Dashboard
+                </button>
             </div>
         </div>
+    </header>
 
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
+
+        <section id="view-mobile" class="space-y-6">
+            
+            <div class="glass p-4 rounded-xl flex items-center justify-between border-l-4 border-l-yellow-500 transition-all" id="mobile-connection-bar">
+                <div class="flex items-center gap-3">
+                    <div class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse" id="tv-status-dot"></div>
+                    <div>
+                        <p class="text-xs text-slate-400">Televisão Selecionada</p>
+                        <p class="font-semibold text-sm" id="connected-tv-name">Nenhuma TV conectada</p>
+                    </div>
+                </div>
+                <button onclick="openPairingModal()" class="bg-blue-600 hover:bg-blue-500 text-xs px-3 py-2 rounded-lg font-semibold transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-link"></i> Parear TV
+                </button>
+            </div>
+
+            <div class="glass p-5 rounded-xl space-y-4">
+                <h2 class="text-lg font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-cloud-arrow-up text-blue-400"></i> Upload para a Nuvem
+                </h2>
+                <div class="border-2 border-dashed border-slate-700 rounded-lg p-6 text-center hover:border-blue-500 transition cursor-pointer relative" id="drop-zone">
+                    <input type="file" id="video-file-input" accept="video/*" class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleFileSelect(event)">
+                    <i class="fa-solid fa-file-video text-3xl text-slate-500 mb-2"></i>
+                    <p class="text-sm text-slate-300 font-medium">Toque para selecionar um vídeo</p>
+                    <p class="text-xs text-slate-500 mt-1">MP4, WebM, MOV ou links HLS (.m3u8)</p>
+                </div>
+
+                <div id="upload-progress-container" class="hidden space-y-2">
+                    <div class="flex justify-between text-xs">
+                        <span id="upload-status-label" class="font-semibold text-blue-400">A ENVIAR...</span>
+                        <span id="upload-percentage">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                        <div id="upload-bar" class="bg-blue-500 h-full w-0 transition-all duration-300"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass p-5 rounded-xl space-y-4">
+                <h2 class="text-lg font-bold flex items-center justify-between">
+                    <span><i class="fa-solid fa-gamepad text-blue-400 mr-2"></i> Controle Remoto</span>
+                    <span id="remote-now-playing" class="text-xs text-slate-400 font-normal truncate max-w-[150px]">Nenhum vídeo</span>
+                </h2>
+                
+                <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 flex flex-col items-center gap-4">
+                    <input type="range" id="remote-seek-bar" min="0" max="100" value="0" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500" onchange="sendSeek(this.value)">
+
+                    <div class="flex items-center gap-6">
+                        <button onclick="sendRemoteCommand('PREV')" class="p-3 bg-slate-800 hover:bg-slate-700 rounded-full text-slate-200 transition">
+                            <i class="fa-solid fa-backward-step"></i>
+                        </button>
+                        <button onclick="sendRemoteCommand('TOGGLE_PLAY')" class="p-4 bg-blue-600 hover:bg-blue-500 rounded-full text-white text-xl transition shadow-lg shadow-blue-600/30">
+                            <i class="fa-solid fa-play" id="remote-play-icon"></i>
+                        </button>
+                        <button onclick="sendRemoteCommand('NEXT')" class="p-3 bg-slate-800 hover:bg-slate-700 rounded-full text-slate-200 transition">
+                            <i class="fa-solid fa-forward-step"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-3 w-full max-w-xs pt-2">
+                        <i class="fa-solid fa-volume-low text-xs text-slate-400"></i>
+                        <input type="range" min="0" max="100" value="80" class="w-full h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500" oninput="sendVolume(this.value)">
+                        <i class="fa-solid fa-volume-high text-xs text-slate-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass p-5 rounded-xl space-y-4">
+                <h2 class="text-lg font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-photo-film text-blue-400"></i> Biblioteca na Nuvem
+                </h2>
+                <div id="video-library-list" class="space-y-3"></div>
+            </div>
+        </section>
+
+        <section id="view-tv" class="hidden relative min-h-[80vh] flex flex-col justify-center items-center rounded-2xl overflow-hidden bg-black border border-slate-800 shadow-2xl p-6">
+            
+            <div id="tv-pairing-screen" class="text-center space-y-6 max-w-xl w-full">
+                <div class="inline-flex items-center justify-center p-4 bg-blue-600/20 rounded-full text-blue-400 mb-1">
+                    <i class="fa-solid fa-tv text-5xl"></i>
+                </div>
+                <h2 class="text-3xl font-extrabold tracking-tight">WEBCAST TV 4.0.0</h2>
+                <p class="text-slate-400 text-sm">Esta TV ainda não está conectada. Introduza o PIN no telemóvel:</p>
+                
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-inner space-y-3">
+                    <span class="text-xs uppercase tracking-widest text-slate-400 font-bold">Código PIN da TV</span>
+                    <div id="tv-pairing-code-display" class="text-4xl md:text-6xl font-mono font-black tracking-widest text-blue-400">
+                        ------
+                    </div>
+                    <button onclick="generateNewTVCode()" class="text-xs text-slate-500 hover:text-slate-300 underline pt-2">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> Gerar novo código
+                    </button>
+                </div>
+                
+                <p class="text-xs text-slate-500">Abra o site no telemóvel, toque em <b>Parear TV</b> e digite este PIN.</p>
+            </div>
+
+            <div id="tv-standby-screen" class="hidden text-center space-y-4">
+                <div class="w-4 h-4 rounded-full bg-emerald-500 animate-ping mx-auto"></div>
+                <h3 class="text-2xl font-bold text-slate-200">WEBCAST TV <span class="text-blue-500">● CONECTADA</span></h3>
+                <p class="text-slate-400 text-sm">Aguardando envio de vídeo a partir do telemóvel...</p>
+            </div>
+
+            <div id="tv-player-container" class="hidden absolute inset-0 bg-black flex items-center justify-center w-full h-full">
+                <video id="tv-video-element" class="w-full h-full object-contain"></video>
+                
+                <div id="tv-osd" class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 p-8 flex flex-col justify-between transition-opacity duration-500 opacity-100">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-circle-play text-blue-500 text-xl"></i>
+                            <span id="tv-video-title" class="font-semibold text-lg">Título do Vídeo</span>
+                        </div>
+                        <span id="tv-quality-badge" class="bg-blue-600/80 text-xs px-2.5 py-1 rounded font-mono font-bold">1080p Stream</span>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="w-full bg-slate-800/80 h-2 rounded-full overflow-hidden">
+                            <div id="tv-progress-bar" class="bg-blue-500 h-full w-0 transition-all duration-200"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-slate-300 font-mono">
+                            <span id="tv-current-time">00:00</span>
+                            <span id="tv-duration">00:00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-desktop" class="hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="glass p-5 rounded-xl">
+                    <p class="text-xs text-slate-400">TVs Ligadas</p>
+                    <p class="text-3xl font-bold mt-1" id="dash-tv-count">1 Dispositivo</p>
+                </div>
+                <div class="glass p-5 rounded-xl">
+                    <p class="text-xs text-slate-400">Vídeos na Nuvem</p>
+                    <p class="text-3xl font-bold mt-1" id="dash-video-count">2 Vídeos</p>
+                </div>
+                <div class="glass p-5 rounded-xl">
+                    <p class="text-xs text-slate-400">Sessão na Nuvem</p>
+                    <p class="text-3xl font-bold mt-1 text-emerald-400" id="dash-session-status">Ativa</p>
+                </div>
+            </div>
+
+            <div class="glass p-5 rounded-xl space-y-3">
+                <h3 class="font-bold text-lg">Log de Eventos na Nuvem</h3>
+                <div id="audit-logs" class="bg-slate-950 p-4 rounded-lg font-mono text-xs text-slate-400 space-y-1 h-48 overflow-y-auto border border-slate-800">
+                    <div>[SYSTEM] WebCast TV 4.0.0 iniciado.</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="pairing-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="glass p-6 rounded-2xl max-w-sm w-full space-y-4 border border-slate-700">
+            <h3 class="text-lg font-bold text-center">Parear com a TV</h3>
+            <p class="text-xs text-slate-400 text-center">Digite o código PIN de 6 dígitos que aparece na tela da TV.</p>
+            
+            <form onsubmit="handlePairingSubmit(event)" class="space-y-4">
+                <input type="text" id="pairing-code-input" maxlength="6" placeholder="000000" class="w-full bg-slate-900 border border-slate-700 text-center text-2xl font-mono tracking-widest py-3 rounded-xl text-white focus:border-blue-500 outline-none">
+                
+                <div id="pairing-error-msg" class="text-xs text-red-400 text-center hidden font-semibold"></div>
+
+                <div class="flex gap-2">
+                    <button type="button" onclick="closePairingModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 py-2.5 rounded-xl text-sm font-semibold transition">Cancelar</button>
+                    <button type="submit" id="btn-submit-pair" class="flex-1 bg-blue-600 hover:bg-blue-500 py-2.5 rounded-xl text-sm font-semibold text-white transition flex items-center justify-center gap-2">
+                        <span>Conectar</span>
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <!-- LÓGICA EM JAVASCRIPT ES5 (COMPATÍVEL COM ANDROID 4.0) -->
     <script>
-        // VARIAVEIS GLOBAIS (ESTILO ES5 COMPATÍVEL COM ANDROID ANTIGO)
-        var currentPIN = "";
-        var activeChannel = "";
+        var currentTVCode = "";
+        var activePin = "";
+        var isTVPaired = false;
+        var hlsInstance = null;
         var tvPollInterval = null;
-        var mobilePollInterval = null;
+        var mobileAckInterval = null;
 
-        // INICIALIZAÇÃO DA PÁGINA
-        window.onload = function() {
-            generateTVPin();
-        };
+        var videoLibrary = [
+            { id: '1', title: 'Big Buck Bunny (HLS Stream)', duration: '09:56', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', quality: '1080p HLS' },
+            { id: '2', title: 'Sintel Trailer (MP4 Direct)', duration: '00:52', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4', quality: '720p MP4' }
+        ];
 
-        // ALTERNARA ENTRE VISÃO MOBILE E TV
-        function setMode(mode) {
-            document.getElementById('view-mobile').className = mode === 'mobile' ? 'card' : 'card hidden';
-            document.getElementById('view-tv').className = mode === 'tv' ? 'tv-screen' : 'tv-screen hidden';
-            
-            document.getElementById('btn-mobile').className = mode === 'mobile' ? 'mode-btn active' : 'mode-btn';
-            document.getElementById('btn-tv').className = mode === 'tv' ? 'mode-btn active' : 'mode-btn';
+        document.addEventListener('DOMContentLoaded', function() {
+            generateNewTVCode();
+            renderLibrary();
+        });
+
+        // NAVEGAÇÃO ENTRE TELAS
+        function switchView(viewName) {
+            ['mobile', 'tv', 'desktop'].forEach(function(v) {
+                document.getElementById('view-' + v).classList.add('hidden');
+                document.getElementById('btn-view-' + v).className = "px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition-all";
+            });
+            document.getElementById('view-' + viewName).classList.remove('hidden');
+            document.getElementById('btn-view-' + viewName).className = "px-3 py-1.5 rounded-md font-medium transition-all bg-blue-600 text-white";
+
+            if (viewName === 'tv') {
+                startTVCloudListener();
+            }
         }
 
-        // 1. GERAR PIN NA TV PHILCO
-        function generateTVPin() {
-            currentPIN = Math.floor(100000 + Math.random() * 900000).toString();
-            document.getElementById('tv-pin-display').innerText = currentPIN;
-            activeChannel = "webcast_philco_" + currentPIN;
-            
-            // Inicia a escuta da nuvem via AJAX Polling (compatível com Android 4.0)
-            startTVPolling();
+        // 1. TV GENERATES PIN & LISTENS TO CLOUD
+        function generateNewTVCode() {
+            currentTVCode = Math.floor(100000 + Math.random() * 900000).toString();
+            var display = document.getElementById('tv-pairing-code-display');
+            if (display) display.innerText = currentTVCode.split('').join(' ');
+
+            logAudit("Novo PIN gerado na TV: " + currentTVCode);
+            startTVCloudListener();
         }
 
-        // 2. CONECTAR O CELULAR USANDO O PIN
-        function connectMobileToTV() {
-            var pinInput = document.getElementById('input-pin').value;
-            if (!pinInput || pinInput.length !== 6) {
-                alert("Por favor, digite o PIN de 6 dígitos exibido na TV.");
+        function startTVCloudListener() {
+            if (tvPollInterval) clearInterval(tvPollInterval);
+            
+            var cloudTopic = "webcast_tv_pin_" + currentTVCode;
+
+            tvPollInterval = setInterval(function() {
+                fetch("https://ntfy.sh/" + cloudTopic + "/json?poll=1")
+                    .then(function(res) { return res.text(); })
+                    .then(function(text) {
+                        if (!text) return;
+                        var lines = text.trim().split("\n");
+                        lines.forEach(function(line) {
+                            try {
+                                var payload = JSON.parse(line);
+                                if (payload.message) {
+                                    var msg = JSON.parse(payload.message);
+                                    handleTVMessage(msg);
+                                }
+                            } catch(e) {}
+                        });
+                    }).catch(function(err) {});
+            }, 1500);
+        }
+
+        function handleTVMessage(msg) {
+            if (msg.type === 'PAIR_REQUEST') {
+                sendCloudMessage("webcast_tv_ack_" + currentTVCode, { type: 'PAIR_SUCCESS', tvName: 'Smart TV' });
+                
+                document.getElementById('tv-pairing-screen').classList.add('hidden');
+                document.getElementById('tv-standby-screen').classList.remove('hidden');
+                logAudit("TV PAREADA COM SUCESSO PELO TELEMÓVEL!");
+            }
+            else if (msg.type === 'PLAY_VIDEO') {
+                playVideoOnTV(msg.video);
+            }
+            else if (msg.type === 'COMMAND') {
+                handleTVCommand(msg.action, msg.value);
+            }
+        }
+
+        // 2. MOBILE ENVIANDO CONEXÃO PARA A NUVEM
+        function openPairingModal() {
+            document.getElementById('pairing-modal').classList.remove('hidden');
+            document.getElementById('pairing-error-msg').classList.add('hidden');
+        }
+
+        function closePairingModal() {
+            document.getElementById('pairing-modal').classList.add('hidden');
+        }
+
+        function handlePairingSubmit(e) {
+            e.preventDefault();
+            var inputPin = document.getElementById('pairing-code-input').value.trim();
+            var errorEl = document.getElementById('pairing-error-msg');
+            var btnSubmit = document.getElementById('btn-submit-pair');
+
+            if (inputPin.length !== 6) {
+                errorEl.innerText = "Introduza o código PIN completo de 6 dígitos.";
+                errorEl.classList.remove('hidden');
                 return;
             }
 
-            activeChannel = "webcast_philco_" + pinInput;
-            
-            // Envia o comando de conexão para a nuvem
-            sendCloudMessage({ type: 'CONNECT_REQUEST' }, function() {
-                document.getElementById('mobile-status').innerText = "Conectado à TV (" + pinInput + ")";
-                document.getElementById('mobile-status').className = "status-on";
-                document.getElementById('mobile-connect-box').className = "hidden";
-                document.getElementById('mobile-remote-box').className = "";
-                alert("Conectado com sucesso à TV!");
-            });
-        }
+            errorEl.classList.add('hidden');
+            btnSubmit.innerHTML = '<i class="fa-solid fa-spinner animate-spin"></i> <span>A conectar...</span>';
 
-        // 3. ENVIAR VÍDEO DO CELULAR PARA A TV
-        function sendTestVideo(url, title) {
-            document.getElementById('current-video-title').innerText = title;
-            sendCloudMessage({
-                type: 'PLAY_VIDEO',
-                url: url,
-                title: title
-            });
-        }
+            activePin = inputPin;
 
-        // 4. ENVIAR COMANDOS DO CONTROLE REMOTO
-        function sendTVCommand(cmd) {
-            sendCloudMessage({
-                type: 'COMMAND',
-                command: cmd
-            });
-        }
-
-        // 5. ENVIAR MENSAGEM VIA NUVEM (HTTP POST - COMPATÍVEL COM QUALQUER DISPOSITIVO)
-        function sendCloudMessage(payloadObj, callback) {
-            var xhr = new XMLHttpRequest();
-            var cloudUrl = "https://ntfy.sh/" + activeChannel;
-            
-            xhr.open("POST", cloudUrl, true);
-            xhr.setRequestHeader("Content-Type", "text/plain");
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4 && xhr.status === 200) {
-                    if (callback) callback();
+            startMobileAckListener(inputPin, function(success) {
+                btnSubmit.innerHTML = '<span>Conectar</span>';
+                if (success) {
+                    confirmMobilePairing("Smart TV (" + inputPin + ")");
+                } else {
+                    errorEl.innerText = "Não foi possível encontrar a TV com este PIN. Confirme o código no ecrã da TV.";
+                    errorEl.classList.remove('hidden');
                 }
-            };
-            xhr.send(JSON.stringify(payloadObj));
+            });
+
+            sendCloudMessage("webcast_tv_pin_" + inputPin, { type: 'PAIR_REQUEST' });
         }
 
-        // 6. ESCUTAR MENSAGENS NA TV PHILCO (AJAX POLLING A CADA 2 SEGUNDOS)
-        function startTVPolling() {
-            if (tvPollInterval) clearInterval(tvPollInterval);
+        function startMobileAckListener(pin, callback) {
+            var ackTopic = "webcast_tv_ack_" + pin;
+            var attempts = 0;
+            var resolved = false;
 
-            tvPollInterval = setInterval(function() {
-                var xhr = new XMLHttpRequest();
-                var cloudUrl = "https://ntfy.sh/" + activeChannel + "/json?poll=1";
+            if (mobileAckInterval) clearInterval(mobileAckInterval);
 
-                xhr.open("GET", cloudUrl, true);
-                xhr.onreadystatechange = function() {
-                    if (xhr.readyState === 4 && xhr.status === 200) {
-                        try {
-                            var lines = xhr.responseText.trim().split("\n");
-                            for (var i = 0; i < lines.length; i++) {
-                                if (lines[i]) {
-                                    var data = JSON.parse(lines[i]);
-                                    if (data.message) {
-                                        var msg = JSON.parse(data.message);
-                                        processTVEvent(msg);
-                                    }
-                                }
-                            }
-                        } catch(e) {}
-                    }
-                };
-                xhr.send();
-            }, 2000);
+            mobileAckInterval = setInterval(function() {
+                attempts++;
+                fetch("https://ntfy.sh/" + ackTopic + "/json?poll=1")
+                    .then(function(res) { return res.text(); })
+                    .then(function(text) {
+                        if (text && text.includes('PAIR_SUCCESS')) {
+                            resolved = true;
+                            clearInterval(mobileAckInterval);
+                            callback(true);
+                        }
+                    }).catch(function(err) {});
+
+                if (attempts > 6 && !resolved) {
+                    clearInterval(mobileAckInterval);
+                    callback(false);
+                }
+            }, 1500);
         }
 
-        // 7. PROCESSAR OS COMANDOS RECEBIDOS NA TV PHILCO
-        function processTVEvent(msg) {
-            var videoEl = document.getElementById('philco-video-element');
+        function confirmMobilePairing(tvName) {
+            isTVPaired = true;
+            closePairingModal();
+            document.getElementById('connected-tv-name').innerText = tvName;
+            document.getElementById('tv-status-dot').className = "w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
+            document.getElementById('mobile-connection-bar').className = "glass p-4 rounded-xl flex items-center justify-between border-l-4 border-l-emerald-500";
+            logAudit("Telemóvel ligado a " + tvName);
+            alert("Conectado com sucesso à TV!");
+        }
 
-            if (msg.type === 'CONNECT_REQUEST') {
-                document.getElementById('tv-status-msg').innerText = " Celular Conectado com Sucesso!";
-                document.getElementById('tv-status-msg').className = "status-on";
-            } 
-            else if (msg.type === 'PLAY_VIDEO') {
-                document.getElementById('tv-standby').className = "hidden";
-                document.getElementById('tv-player-box').className = "";
-                document.getElementById('tv-playing-title').innerText = msg.title;
-                
-                videoEl.src = msg.url;
-                videoEl.load();
+        // 3. ENVIAR COMANDOS E VÍDEOS PELO TELEMÓVEL
+        function sendVideoToTV(videoId) {
+            if (!isTVPaired) {
+                alert("Por favor, pareie primeiro o telemóvel com a TV.");
+                openPairingModal();
+                return;
+            }
+            var video = videoLibrary.find(function(v) { return v.id === videoId; });
+            if (video) {
+                sendCloudMessage("webcast_tv_pin_" + activePin, { type: 'PLAY_VIDEO', video: video });
+                logAudit("Vídeo enviado para a TV: " + video.title);
+            }
+        }
+
+        function sendRemoteCommand(action, value) {
+            if (!isTVPaired) return;
+            sendCloudMessage("webcast_tv_pin_" + activePin, { type: 'COMMAND', action: action, value: value });
+        }
+
+        function sendSeek(val) { sendRemoteCommand('SEEK', val); }
+        function sendVolume(val) { sendRemoteCommand('VOLUME', val); }
+
+        // 4. REPRODUÇÃO DE VÍDEO NA TV
+        function playVideoOnTV(video) {
+            document.getElementById('tv-pairing-screen').classList.add('hidden');
+            document.getElementById('tv-standby-screen').classList.add('hidden');
+            document.getElementById('tv-player-container').classList.remove('hidden');
+
+            var videoEl = document.getElementById('tv-video-element');
+            document.getElementById('tv-video-title').innerText = video.title;
+            document.getElementById('tv-quality-badge').innerText = video.quality;
+            document.getElementById('remote-now-playing').innerText = video.title;
+
+            if (video.url.includes('.m3u8') && typeof Hls !== 'undefined' && Hls.isSupported()) {
+                if (hlsInstance) hlsInstance.destroy();
+                hlsInstance = new Hls();
+                hlsInstance.loadSource(video.url);
+                hlsInstance.attachMedia(videoEl);
+                hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() { videoEl.play(); });
+            } else {
+                videoEl.src = video.url;
                 videoEl.play();
             }
-            else if (msg.type === 'COMMAND') {
-                if (msg.command === 'PLAY_PAUSE') {
-                    if (videoEl.paused) { videoEl.play(); } else { videoEl.pause(); }
-                } else if (msg.command === 'STOP') {
-                    videoEl.pause();
-                    videoEl.currentTime = 0;
-                    document.getElementById('tv-player-box').className = "hidden";
-                    document.getElementById('tv-standby').className = "";
+
+            videoEl.ontimeupdate = function() {
+                var pct = (videoEl.currentTime / videoEl.duration) * 100;
+                document.getElementById('tv-progress-bar').style.width = pct + '%';
+                document.getElementById('remote-seek-bar').value = pct || 0;
+                document.getElementById('tv-current-time').innerText = formatTime(videoEl.currentTime);
+                document.getElementById('tv-duration').innerText = formatTime(videoEl.duration || 0);
+            };
+        }
+
+        function handleTVCommand(action, value) {
+            var videoEl = document.getElementById('tv-video-element');
+            if (!videoEl) return;
+
+            if (action === 'TOGGLE_PLAY') {
+                if (videoEl.paused) { videoEl.play(); } else { videoEl.pause(); }
+            } else if (action === 'SEEK' && videoEl.duration) {
+                videoEl.currentTime = (value / 100) * videoEl.duration;
+            } else if (action === 'VOLUME') {
+                videoEl.volume = value / 100;
+            }
+        }
+
+        // HELPER HTTP CLOUD
+        function sendCloudMessage(topic, dataObj) {
+            fetch("https://ntfy.sh/" + topic, {
+                method: "POST",
+                body: JSON.stringify(dataObj)
+            }).catch(function(err) {});
+        }
+
+        // UPLOAD LOCAL
+        function handleFileSelect(event) {
+            var file = event.target.files[0];
+            if (!file) return;
+
+            var progressContainer = document.getElementById('upload-progress-container');
+            var progressBar = document.getElementById('upload-bar');
+            var statusLabel = document.getElementById('upload-status-label');
+            var percentLabel = document.getElementById('upload-percentage');
+
+            progressContainer.classList.remove('hidden');
+            var progress = 0;
+
+            var interval = setInterval(function() {
+                progress += 10;
+                progressBar.style.width = progress + '%';
+                percentLabel.innerText = progress + '%';
+
+                if (progress === 70) statusLabel.innerText = "PROCESSANDO HLS...";
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    statusLabel.innerText = "PRONTO!";
+                    setTimeout(function() {
+                        var newVid = {
+                            id: Date.now().toString(),
+                            title: file.name,
+                            duration: '03:45',
+                            url: URL.createObjectURL(file),
+                            quality: 'Local Stream'
+                        };
+                        videoLibrary.unshift(newVid);
+                        renderLibrary();
+                        progressContainer.classList.add('hidden');
+                        progressBar.style.width = '0%';
+                    }, 800);
                 }
+            }, 250);
+        }
+
+        function renderLibrary() {
+            var listEl = document.getElementById('video-library-list');
+            listEl.innerHTML = '';
+
+            videoLibrary.forEach(function(vid) {
+                var item = document.createElement('div');
+                item.className = "bg-slate-900/80 p-3 rounded-lg border border-slate-800 flex items-center justify-between gap-3";
+                item.innerHTML = 
+                    '<div class="flex items-center gap-3 overflow-hidden">' +
+                        '<div class="w-10 h-10 rounded bg-slate-800 flex items-center justify-center text-blue-400 font-bold shrink-0">' +
+                            '<i class="fa-solid fa-play"></i>' +
+                        '</div>' +
+                        '<div class="truncate">' +
+                            '<p class="font-semibold text-sm truncate">' + vid.title + '</p>' +
+                            '<p class="text-xs text-slate-500">' + vid.duration + ' • ' + vid.quality + '</p>' +
+                        '</div>' +
+                    '</div>' +
+                    '<button onclick="sendVideoToTV(\'' + vid.id + '\')" class="bg-blue-600 hover:bg-blue-500 text-xs px-3 py-1.5 rounded-md font-semibold text-white shrink-0 transition">' +
+                        'Enviar p/ TV' +
+                    '</button>';
+                listEl.appendChild(item);
+            });
+            document.getElementById('dash-video-count').innerText = videoLibrary.length + " Vídeos";
+        }
+
+        function formatTime(secs) {
+            var m = Math.floor(secs / 60);
+            var s = Math.floor(secs % 60);
+            return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+        }
+
+        function logAudit(msg) {
+            var container = document.getElementById('audit-logs');
+            if (container) {
+                var time = new Date().toLocaleTimeString();
+                var line = document.createElement('div');
+                line.innerText = '[' + time + '] ' + msg;
+                container.appendChild(line);
+                container.scrollTop = container.scrollHeight;
             }
         }
     </script>
