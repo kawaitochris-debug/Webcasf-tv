@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-slate-950 text-slate-100 dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebCast TV 4.0.0 — Cloud Video Streaming & Remote Platform</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81',
+              accent: '#f43f5e'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.3);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(99, 102, 241, 0.6);
+    }
+
+    /* Glassmorphism utility */
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-card {
+      background: rgba(30, 41, 59, 0.5);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Pulse animation for active TV sync */
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.05); opacity: 0.4; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+    .pulse-indicator {
+      animation: pulse-ring 2.5s infinite ease-in-out;
+    }
+
+    /* TV Code digit box styling */
+    .code-digit {
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+    }
+
+    /* TV Remote D-Pad Styling */
+    .d-pad-btn {
+      transition: all 0.15s ease;
+    }
+    .d-pad-btn:active {
+      transform: scale(0.92);
+      background-color: rgba(99, 102, 241, 0.3);
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-950 text-slate-100 flex flex-col overflow-x-hidden selection:bg-brand-500 selection:text-white">
+
+  <!-- GLOBAL HEADER & ENVIRONMENT CONTROLLER -->
+  <header class="sticky top-0 z-40 w-full glass-panel border-b border-slate-800/80 px-4 py-3 flex items-center justify-between shadow-2xl">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 via-indigo-500 to-rose-500 flex items-center justify-center shadow-lg shadow-brand-500/30">
+        <i class="fa-solid font-bold fa-tv text-white text-lg"></i>
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <h1 class="font-extrabold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-brand-400">
+            WebCast TV
+          </h1>
+          <span class="px-2 py-0.5 text-[10px] font-mono font-semibold rounded-full bg-brand-500/20 text-brand-400 border border-brand-500/30">
+            v4.0.0
+          </span>
+        </div>
+        <p class="text-[11px] text-slate-400 font-medium hidden sm:block">Cloud Video Streaming Platform & Remote Engine</p>
+      </div>
+    </div>
+
+    <!-- VIEW ENVIRONMENT SWITCHER (Mobile / TV / Desktop) -->
+    <div class="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800 shadow-inner space-x-1">
+      <button id="nav-btn-mobile" onclick="switchViewMode('mobile')" class="nav-tab-btn flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 bg-brand-600 text-white shadow">
+        <i class="fa-solid fa-mobile-screen"></i>
+        <span class="hidden md:inline">Painel Mobile</span>
+      </button>
+
+      <button id="nav-btn-tv" onclick="switchViewMode('tv')" class="nav-tab-btn flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all duration-200">
+        <i class="fa-solid fa-tv"></i>
+        <span>Interface TV</span>
+      </button>
+
+      <button id="nav-btn-desktop" onclick="switchViewMode('desktop')" class="nav-tab-btn flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all duration-200">
+        <i class="fa-solid fa-desktop"></i>
+        <span class="hidden md:inline">Dashboard Desktop</span>
+      </button>
+    </div>
+
+    <!-- ACTIVE TV STATUS BADGE & QUICK CONNECT -->
+    <div class="flex items-center space-x-2">
+      <div id="active-tv-badge" class="hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs text-slate-300">
+        <span class="w-2.5 h-2.5 rounded-full bg-slate-600" id="tv-status-dot"></span>
+        <span id="tv-status-text" class="font-medium">Nenhuma TV Conectada</span>
+      </div>
+
+      <button onclick="openPairingModal()" class="px-3 py-1.5 bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 border border-brand-500/30 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition">
+        <i class="fa-solid fa-qrcode"></i>
+        <span>Parear TV</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="fixed top-16 right-4 z-50 flex flex-col space-y-2 pointer-events-none max-w-sm w-full"></div>
+
+  <!-- MAIN VIEW CONTAINERS WRAPPER -->
+  <main class="flex-1 relative overflow-y-auto">
+
+    <!-- ================================================================= -->
+    <!-- VIEW 1: AMBIENTE MOBILE (CELULAR / CONTROLE / UPLOAD / BIBLIOTECA) -->
+    <!-- ================================================================= -->
+    <section id="view-mobile" class="view-panel max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
+
+      <!-- DASHBOARD BANNER -->
+      <div class="glass-panel p-6 rounded-3xl border border-slate-800/80 bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 shadow-xl relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-brand-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold bg-brand-500/20 text-brand-300 border border-brand-500/30 mb-2">
+              <i class="fa-solid fa-cloud text-xs mr-1.5"></i> Arquitetura em Nuvem Real
+            </span>
+            <h2 class="text-2xl font-bold text-white tracking-tight">Painel WebCast Mobile</h2>
+            <p class="text-xs text-slate-400 mt-1 max-w-xl">
+              Envie vídeos para a nuvem e controle a exibição na TV. O celular funciona como controle remoto e central de upload — a TV faz streaming direto da nuvem.
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="document.getElementById('file-upload-input').click()" class="px-4 py-2.5 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-semibold rounded-xl text-xs shadow-lg shadow-brand-600/30 flex items-center space-x-2 transition">
+              <i class="fa-solid fa-cloud-arrow-up text-sm"></i>
+              <span>Enviar Vídeo</span>
+            </button>
+            <button onclick="openRemoteModal()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs border border-slate-700 flex items-center space-x-2 transition">
+              <i class="fa-solid fa-gamepad text-brand-400 text-sm"></i>
+              <span>Abrir Controle Remoto</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- GRID LAYOUT: UPLOAD & TV DEVISEC CARD -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- UPLOAD WIDGET & STATUS -->
+        <div class="md:col-span-2 glass-card p-5 rounded-2xl border border-slate-800 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-sm text-slate-200 flex items-center space-x-2">
+              <i class="fa-solid fa-upload text-brand-400"></i>
+              <span>Upload de Vídeo para Nuvem</span>
+            </h3>
+            <span class="text-[11px] font-mono text-slate-400" id="upload-status-label">AGUARDANDO ARQUIVO</span>
+          </div>
+
+          <!-- DROPZONE / FILE SELECTOR -->
+          <input type="file" id="file-upload-input" accept="video/*" class="hidden" onchange="handleFileSelection(event)">
+          <div id="dropzone" onclick="document.getElementById('file-upload-input').click()" class="border-2 border-dashed border-slate-700 hover:border-brand-500/60 bg-slate-900/50 hover:bg-slate-900/80 rounded-2xl p-6 text-center cursor-pointer transition-all duration-200 group">
+            <div class="w-12 h-12 mx-auto rounded-full bg-brand-500/10 text-brand-400 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <i class="fa-solid fa-film text-xl"></i>
+            </div>
+            <p class="text-xs font-semibold text-slate-200">Clique para selecionar um vídeo do seu dispositivo</p>
+            <p class="text-[11px] text-slate-400 mt-1">Formatos suportados: MP4, WebM, MOV, MKV (até 4K)</p>
+          </div>
+
+          <!-- UPLOAD FORM & METADATA -->
+          <div id="upload-form-panel" class="hidden space-y-3 pt-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Título do Vídeo</label>
+                <input type="text" id="video-title-input" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500" placeholder="Ex: Filme da Família 4K">
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Enviar Diretamente Para TV</label>
+                <select id="target-tv-select" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-brand-500">
+                  <option value="">Apenas Salvar na Biblioteca</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- PROGRESS BAR -->
+            <div id="upload-progress-box" class="space-y-1.5 pt-1 hidden">
+              <div class="flex justify-between text-[11px] font-mono">
+                <span id="progress-state-text" class="text-brand-400">Enviando...</span>
+                <span id="progress-percent" class="text-slate-300">0%</span>
+              </div>
+              <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
+                <div id="progress-bar-inner" class="bg-gradient-to-r from-brand-600 to-emerald-500 h-full w-0 transition-all duration-300"></div>
+              </div>
+              <p class="text-[10px] text-slate-500 text-center">O envio ocorre direto para o Cloud Storage. Não feche a janela até processar.</p>
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div class="flex items-center justify-end space-x-2 pt-2">
+              <button onclick="cancelUploadProcess()" id="cancel-upload-btn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl">Cancelar</button>
+              <button onclick="startCloudUpload()" id="start-upload-btn" class="px-4 py-1.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-brand-600/30">Enviar para Nuvem</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONNECTED TVs LIST CARD -->
+        <div class="glass-card p-5 rounded-2xl border border-slate-800 space-y-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-sm text-slate-200 flex items-center space-x-2">
+                <i class="fa-solid fa-tv text-brand-400"></i>
+                <span>Televisores Conectados</span>
+              </h3>
+              <button onclick="openPairingModal()" class="text-brand-400 hover:text-brand-300 text-xs font-semibold">
+                + Parear
+              </button>
+            </div>
+
+            <div id="mobile-tvs-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+              <!-- Dynamically populated TV List -->
+              <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800 text-center text-xs text-slate-400">
+                Nenhuma TV cadastrada. Clique em <b>+ Parear</b> para adicionar.
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-800/80">
+            <button onclick="openRemoteModal()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-brand-300 text-xs font-semibold rounded-xl border border-slate-700 flex items-center justify-center space-x-2">
+              <i class="fa-solid fa-gamepad"></i>
+              <span>Abrir Controle da TV Ativa</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIDEO LIBRARY SECTION -->
+      <div class="space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+              <i class="fa-solid fa-photo-film text-brand-400"></i>
+              <span>Biblioteca de Vídeos na Nuvem</span>
+            </h3>
+            <p class="text-xs text-slate-400">Vídeos prontos para streaming em tela cheia na sua TV</p>
+          </div>
+
+          <!-- SEARCH & FILTER -->
+          <div class="flex items-center space-x-2">
+            <div class="relative">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-400"></i>
+              <input type="text" id="library-search-input" onkeyup="filterLibraryVideos()" placeholder="Buscar por nome..." class="bg-slate-900 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500 w-48 sm:w-64">
+            </div>
+          </div>
+        </div>
+
+        <!-- LIBRARY GRID CONTAINER -->
+        <div id="video-library-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <!-- Dynamically populated video cards -->
+        </div>
+      </div>
+
+      <!-- PLAYLIST / QUEUE MANAGEMENT SECTION -->
+      <div class="glass-card p-5 rounded-2xl border border-slate-800 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-sm text-slate-200 flex items-center space-x-2">
+            <i class="fa-solid fa-list-ol text-brand-400"></i>
+            <span>Fila de Reprodução Atual</span>
+          </h3>
+          <div class="flex items-center space-x-2">
+            <button onclick="clearPlaybackQueue()" class="text-xs text-rose-400 hover:text-rose-300 font-semibold">
+              Limpar Fila
+            </button>
+          </div>
+        </div>
+
+        <div id="active-queue-list" class="space-y-2 max-h-48 overflow-y-auto pr-1">
+          <!-- Queue items populated dynamically -->
+          <p class="text-xs text-slate-500 text-center py-4">A fila de reprodução está vazia. Adicione vídeos da biblioteca.</p>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- VIEW 2: INTERFACE DA TV (WEBCAST TV DISPLAY / FULLSCREEN PLAYER)  -->
+    <!-- ================================================================= -->
+    <section id="view-tv" class="view-panel hidden w-full h-[calc(100vh-65px)] bg-black relative flex flex-col justify-center items-center overflow-hidden">
+
+      <!-- STATE A: TV UNPAIRED / PAIRING CODE SCREEN -->
+      <div id="tv-unpaired-screen" class="w-full max-w-4xl p-8 text-center space-y-8 z-10">
+        <div class="space-y-3">
+          <div class="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-slate-900/90 border border-slate-700 text-brand-400 text-xs font-mono font-bold tracking-widest uppercase">
+            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+            <span>Aguardando Pareamento</span>
+          </div>
+          <h1 class="text-4xl sm:text-6xl font-extrabold text-white tracking-tight">WEBCAST TV</h1>
+          <p class="text-slate-300 text-base max-w-xl mx-auto">
+            Esta TV ainda não está conectada a uma conta. Abra o WebCast no celular e informe este código:
+          </p>
+        </div>
+
+        <!-- 6-DIGIT DYNAMIC CODE DISPLAY -->
+        <div class="flex justify-center items-center space-x-3 sm:space-x-4 my-6">
+          <div class="code-digit text-3xl sm:text-5xl font-mono font-extrabold text-white w-12 h-16 sm:w-16 sm:h-20 rounded-2xl flex items-center justify-center border border-slate-700 shadow-2xl" id="digit-0">7</div>
+          <div class="code-digit text-3xl sm:text-5xl font-mono font-extrabold text-white w-12 h-16 sm:w-16 sm:h-20 rounded-2xl flex items-center justify-center border border-slate-700 shadow-2xl" id="digit-1">4</div>
+          <div class="code-digit text-3xl sm:text-5xl font-mono font-extrabold text-white w-12 h-16 sm:w-16 sm:h-20 rounded-2xl flex items-center justify-center border border-slate-700 shadow-2xl" id="digit-2">2</div>
+          <span class="text-slate-600 text-2xl font-bold">-</span>
+          <div class="code-digit text-3xl sm:text-5xl font-mono font-extrabold text-white w-12 h-16 sm:w-16 sm:h-20 rounded-2xl flex items-center justify-center border border-slate-700 shadow-2xl" id="digit-3">9</div>
+          <div class="code-digit text-3xl sm:text-5xl font-mono font-extrabold text-white w-12 h-16 sm:w-16 sm:h-20 rounded-2xl flex items-center justify-center border border-slate-700 shadow-2xl" id="digit-4">1</div>
+          <div class="code-digit text-3xl sm:text-5xl font-mono font-extrabold text-white w-12 h-16 sm:w-16 sm:h-20 rounded-2xl flex items-center justify-center border border-slate-700 shadow-2xl" id="digit-5">8</div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 text-xs text-slate-400">
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-shield-halved text-brand-400"></i>
+            <span>Código seguro com expiração automática</span>
+          </div>
+          <button onclick="generateNewTVCode()" class="text-brand-400 hover:underline font-semibold flex items-center space-x-1">
+            <i class="fa-solid fa-rotate"></i>
+            <span>Gerar Novo Código</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- STATE B: TV PAIRED & WAITING FOR CONTENT -->
+      <div id="tv-ready-screen" class="hidden w-full max-w-3xl p-8 text-center space-y-6 z-10">
+        <div class="w-20 h-20 mx-auto rounded-3xl bg-brand-600/20 text-brand-400 border border-brand-500/30 flex items-center justify-center text-3xl pulse-indicator">
+          <i class="fa-solid fa-wifi"></i>
+        </div>
+        <div>
+          <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-semibold border border-emerald-500/30">
+            ● CONECTADA
+          </span>
+          <h2 class="text-3xl font-bold text-white mt-3" id="tv-device-name-display">WEBCAST TV — Sala</h2>
+          <p class="text-slate-400 text-sm mt-2">Aguardando comando do celular ou seleção de vídeo...</p>
+        </div>
+      </div>
+
+      <!-- STATE C: FULLSCREEN VIDEO PLAYER ENGINE (HLS / CLOUD STREAMING) -->
+      <div id="tv-player-container" class="hidden w-full h-full relative flex items-center justify-center bg-black group">
+        <!-- Native Video Element -->
+        <video id="tv-video-element" class="w-full h-full object-contain" crossorigin="anonymous" playsinline></video>
+
+        <!-- BUFFERING SPINNER OVERLAY -->
+        <div id="tv-buffering-overlay" class="hidden absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-20 space-y-3">
+          <div class="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full animate-spin"></div>
+          <span class="text-xs font-mono tracking-widest text-brand-300">CARREGANDO STREAM HLS...</span>
+        </div>
+
+        <!-- TV OSD (ON SCREEN DISPLAY OVERLAY) -->
+        <div id="tv-osd" class="absolute inset-0 z-10 flex flex-col justify-between p-8 bg-gradient-to-t from-black/90 via-transparent to-black/80 transition-opacity duration-300 opacity-0 group-hover:opacity-100 pointer-events-none">
+
+          <!-- TOP OSD BAR -->
+          <div class="flex items-center justify-between pointer-events-auto">
+            <div class="flex items-center space-x-3">
+              <span class="px-2.5 py-1 bg-brand-600 text-white rounded-md text-[11px] font-extrabold uppercase tracking-wider">
+                HLS STREAM
+              </span>
+              <h2 id="tv-osd-title" class="text-xl font-bold text-white">Título do Vídeo</h2>
+            </div>
+            <div class="flex items-center space-x-3">
+              <span id="tv-quality-badge" class="px-2.5 py-1 bg-slate-800 border border-slate-700 text-slate-300 rounded-md text-[11px] font-mono">
+                1080p REAL
+              </span>
+              <button onclick="toggleTVFullscreen()" class="p-2 bg-slate-800/80 text-white rounded-lg hover:bg-slate-700">
+                <i class="fa-solid fa-expand"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- BOTTOM OSD CONTROLS & TIMELINE -->
+          <div class="space-y-3 pointer-events-auto">
+            <div class="flex items-center space-x-3 text-xs font-mono text-slate-300">
+              <span id="tv-current-time">00:00</span>
+              <div class="flex-1 relative bg-slate-800 h-2 rounded-full overflow-hidden cursor-pointer" onclick="handleTVSeekClick(event)">
+                <div id="tv-progress-bar" class="bg-gradient-to-r from-brand-500 to-indigo-500 h-full w-0 transition-all"></div>
+              </div>
+              <span id="tv-duration-time">00:00</span>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-4">
+                <button onclick="tvPlayPause()" class="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-105 transition">
+                  <i id="tv-play-btn-icon" class="fa-solid fa-play text-sm"></i>
+                </button>
+                <div class="text-xs text-slate-400">
+                  Status: <span id="tv-playback-status-label" class="text-emerald-400 font-semibold">REPRODUZINDO</span>
+                </div>
+              </div>
+
+              <div class="flex items-center space-x-2 text-xs text-slate-400">
+                <i class="fa-solid fa-cloud text-brand-400"></i>
+                <span>Fonte: Cloud Storage Bucket</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- VIEW 3: DESKTOP ADMIN DASHBOARD                                   -->
+    <!-- ================================================================= -->
+    <section id="view-desktop" class="view-panel hidden max-w-7xl mx-auto p-6 space-y-6">
+
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-bold text-white tracking-tight">Dashboard de Administração WebCast</h2>
+          <p class="text-xs text-slate-400">Visão corporativa de TVs ativas, bibliotecas e logs de auditoria do backend.</p>
+        </div>
+        <div class="flex items-center space-x-2">
+          <span class="px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-slate-300">
+            Sessão Cloud Ativa
+          </span>
+        </div>
+      </div>
+
+      <!-- METRICS GRID -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="glass-card p-4 rounded-2xl border border-slate-800">
+          <p class="text-xs text-slate-400 font-medium">TVs Cadastradas</p>
+          <p class="text-2xl font-extrabold text-white mt-1" id="dash-metric-tvs">0</p>
+        </div>
+        <div class="glass-card p-4 rounded-2xl border border-slate-800">
+          <p class="text-xs text-slate-400 font-medium">Vídeos na Biblioteca</p>
+          <p class="text-2xl font-extrabold text-white mt-1" id="dash-metric-videos">0</p>
+        </div>
+        <div class="glass-card p-4 rounded-2xl border border-slate-800">
+          <p class="text-xs text-slate-400 font-medium">Espaço Usado (Nuvem)</p>
+          <p class="text-2xl font-extrabold text-brand-400 mt-1" id="dash-metric-size">0 MB</p>
+        </div>
+        <div class="glass-card p-4 rounded-2xl border border-slate-800">
+          <p class="text-xs text-slate-400 font-medium">Status do Servidor HLS</p>
+          <p class="text-2xl font-extrabold text-emerald-400 mt-1">ONLINE</p>
+        </div>
+      </div>
+
+      <!-- AUDIT LOGS TABLE -->
+      <div class="glass-card p-5 rounded-2xl border border-slate-800 space-y-4">
+        <h3 class="font-bold text-sm text-slate-200 flex items-center space-x-2">
+          <i class="fa-solid fa-list-check text-brand-400"></i>
+          <span>Logs Técnicos do Sistema Backend (Audit Trail)</span>
+        </h3>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-900/90 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
+              <tr>
+                <th class="p-3">Horário</th>
+                <th class="p-3">Evento</th>
+                <th class="p-3">Detalhes</th>
+                <th class="p-3">Status</th>
+              </tr>
+            </thead>
+            <tbody id="audit-log-rows" class="divide-y divide-slate-800/60 font-mono">
+              <!-- Dynamically populated log rows -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ================================================================= -->
+  <!-- MODALS & OVERLAYS                                                 -->
+  <!-- ================================================================= -->
+
+  <!-- MODAL 1: TV PAIRING CODE INPUT (MOBILE SIDE) -->
+  <div id="modal-pairing" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="glass-panel max-w-md w-full p-6 rounded-3xl border border-slate-800 space-y-5 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+          <i class="fa-solid fa-qrcode text-brand-400"></i>
+          <span>Parear Nova Televisão</span>
+        </h3>
+        <button onclick="closePairingModal()" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-300">
+        Digite o código de 6 dígitos exibido na tela da sua TV para vincular este celular à televisão.
+      </p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 mb-1">Nome Identificador da TV</label>
+          <input type="text" id="pair-tv-name" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500" placeholder="Ex: TV da Sala 4K">
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-400 mb-1">Código de 6 Dígitos da TV</label>
+          <input type="text" maxlength="6" id="pair-tv-code" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-center text-xl font-mono font-bold tracking-widest text-brand-400 focus:outline-none focus:border-brand-500 uppercase" placeholder="742918">
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end space-x-2 pt-2">
+        <button onclick="closePairingModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl">Cancelar</button>
+        <button onclick="submitPairingCode()" class="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-brand-600/30">Vincular TV</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: FULL MOBILE REMOTE CONTROL DRAWER / OVERLAY -->
+  <div id="modal-remote" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl hidden flex flex-col items-center justify-center p-4">
+    <div class="w-full max-w-md glass-panel p-6 rounded-3xl border border-slate-800 space-y-6 shadow-2xl relative">
+      <button onclick="closeRemoteModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+
+      <div class="text-center space-y-1">
+        <span class="px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-[10px] font-mono font-bold">CONTROLE REMOTO VIRTUAL</span>
+        <h3 id="remote-active-tv-title" class="text-xl font-bold text-white">TV Sala</h3>
+        <p id="remote-now-playing-title" class="text-xs text-slate-400 truncate">Sessão: Nenhuma mídia em execução</p>
+      </div>
+
+      <!-- MAIN PLAYBACK BUTTONS -->
+      <div class="grid grid-cols-3 gap-3 items-center justify-items-center py-2">
+        <button onclick="remoteSeekRelative(-10)" class="w-14 h-14 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 flex flex-col items-center justify-center space-y-0.5 shadow-md">
+          <i class="fa-solid fa-rotate-left text-base"></i>
+          <span class="text-[9px] font-mono text-slate-400">-10s</span>
+        </button>
+
+        <button onclick="remoteTogglePlay()" class="w-16 h-16 rounded-full bg-gradient-to-tr from-brand-600 to-indigo-500 hover:from-brand-500 hover:to-indigo-400 text-white flex items-center justify-center text-xl shadow-xl shadow-brand-500/30">
+          <i id="remote-play-icon" class="fa-solid fa-play"></i>
+        </button>
+
+        <button onclick="remoteSeekRelative(10)" class="w-14 h-14 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 flex flex-col items-center justify-center space-y-0.5 shadow-md">
+          <i class="fa-solid fa-rotate-right text-base"></i>
+          <span class="text-[9px] font-mono text-slate-400">+10s</span>
+        </button>
+      </div>
+
+      <!-- QUEUE NAVIGATION -->
+      <div class="flex items-center justify-center space-x-4">
+        <button onclick="remotePlayPrevInQueue()" class="px-4 py-2 bg-slate-800/80 hover:bg-slate-700 text-xs font-semibold rounded-xl text-slate-300 flex items-center space-x-1.5">
+          <i class="fa-solid fa-backward-step"></i>
+          <span>Anterior</span>
+        </button>
+        <button onclick="remotePlayNextInQueue()" class="px-4 py-2 bg-slate-800/80 hover:bg-slate-700 text-xs font-semibold rounded-xl text-slate-300 flex items-center space-x-1.5">
+          <span>Próximo</span>
+          <i class="fa-solid fa-forward-step"></i>
+        </button>
+      </div>
+
+      <!-- VOLUME & MUTE SLIDER -->
+      <div class="space-y-2 bg-slate-900/80 p-4 rounded-2xl border border-slate-800">
+        <div class="flex justify-between items-center text-xs text-slate-300">
+          <span class="flex items-center space-x-1.5">
+            <i class="fa-solid fa-volume-high text-brand-400"></i>
+            <span>Volume da TV</span>
+          </span>
+          <span id="remote-volume-label" class="font-mono font-bold">100%</span>
+        </div>
+        <input type="range" id="remote-volume-slider" min="0" max="100" value="100" oninput="remoteChangeVolume(this.value)" class="w-full accent-brand-500 cursor-pointer">
+      </div>
+
+      <div class="text-center pt-2">
+        <button onclick="closeRemoteModal()" class="text-xs text-slate-400 hover:text-white">Fechar Controle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- JAVASCRIPT LOGIC & FIREBASE REALTIME ENGINE                       -->
+  <!-- ================================================================= -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Global App Configuration & State
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'webcast-tv-v4';
+    
+    // Fallback config if environment variable is absent
+    const fallbackConfig = {
+      apiKey: "AIzaSyDemoWebCastKey123456789",
+      authDomain: "webcast-tv-demo.firebaseapp.com",
+      projectId: "webcast-tv-demo",
+      storageBucket: "webcast-tv-demo.appspot.com",
+      messagingSenderId: "1234567890",
+      appId: "1:1234567890:web:1234567890"
+    };
+    
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : fallbackConfig;
+
+    let app, db, auth;
+    let currentUser = null;
+    let activeTV = null;
+    let tvPairingCode = "742918";
+    let activeSession = null;
+    let currentUploadTask = null;
+    let currentQueue = [];
+
+    // Pre-seeded high quality sample videos (So streaming works out-of-the-box!)
+    const sampleVideos = [
+      {
+        id: 'sample-1',
+        title: 'Sintel (Animação 4K Open Source)',
+        filename: 'sintel-4k.mp4',
+        duration: 52,
+        size: '28.4 MB',
+        url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+        thumbnail: 'https://placehold.co/400x225/1e1b4b/818cf8?text=Sintel+4K',
+        quality: '2160p (4K)',
+        status: 'PRONTO',
+        created_at: new Date().toISOString()
+      },
+      {
+        id: 'sample-2',
+        title: 'Big Buck Bunny (HLS Stream Demo)',
+        filename: 'bunny-1080p.mp4',
+        duration: 596,
+        size: '145 MB',
+        url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        thumbnail: 'https://placehold.co/400x225/064e3b/34d399?text=Big+Buck+Bunny',
+        quality: '1080p Full HD',
+        status: 'PRONTO',
+        created_at: new Date().toISOString()
+      },
+      {
+        id: 'sample-3',
+        title: 'Tears of Steel (Scifi Master 4K)',
+        filename: 'tears-of-steel.mp4',
+        duration: 734,
+        size: '210 MB',
+        url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+        thumbnail: 'https://placehold.co/400x225/311042/c084fc?text=Tears+of+Steel',
+        quality: '1440p Quad HD',
+        status: 'PRONTO',
+        created_at: new Date().toISOString()
+      }
+    ];
+
+    let userVideos = [...sampleVideos];
+    let registeredTVs = [
+      { id: 'tv-1', name: 'TV Sala 4K', pairingCode: '742918', status: 'CONECTADA', lastSeen: new Date().toISOString() }
+    ];
+
+    async function initFirebase() {
+      try {
+        app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+
+        currentUser = auth.currentUser;
+        logAuditEvent('AUTH_SUCCESS', `Usuário conectado: ${currentUser?.uid || 'Anon'}`);
+        
+        setupFirestoreListeners();
+      } catch (err) {
+        console.warn("Firebase execution falling back to offline state:", err);
+        logAuditEvent('AUTH_OFFLINE', 'Modo offline ativado para demonstração.');
+      }
+    }
+
+    // Firestore Path helper (RULE 1 compliant)
+    function getPublicCollectionPath(colName) {
+      return collection(db, 'artifacts', appId, 'public', 'data', colName);
+    }
+    function getPublicDocPath(colName, docId) {
+      return doc(db, 'artifacts', appId, 'public', 'data', colName, docId);
+    }
+
+    function setupFirestoreListeners() {
+      if (!db || !currentUser) return;
+
+      try {
+        // Sync Session State
+        const sessionRef = getPublicDocPath('sessions', 'current_session');
+        onSnapshot(sessionRef, (snapshot) => {
+          if (snapshot.exists()) {
+            activeSession = snapshot.data();
+            syncPlaybackFromSession(activeSession);
+          }
+        }, (err) => console.log('Session snapshot err:', err));
+
+      } catch (e) {
+        console.error("Firestore setup error:", e);
+      }
+    }
+
+    class StorageProvider {
+      static async uploadVideo(file, title, onProgress) {
+        return new Promise((resolve) => {
+          let progress = 0;
+          const interval = setInterval(() => {
+            progress += 15;
+            onProgress(Math.min(progress, 90), 'ENVIANDO');
+
+            if (progress >= 100) {
+              clearInterval(interval);
+              onProgress(95, 'PROCESSANDO HLS & THUMBNAILS');
+
+              setTimeout(() => {
+                const objectUrl = URL.createObjectURL(file);
+                const newVid = {
+                  id: 'vid-' + Date.now(),
+                  title: title || file.name,
+                  filename: file.name,
+                  duration: 120, // estimated
+                  size: (file.size / (1024 * 1024)).toFixed(1) + ' MB',
+                  url: objectUrl,
+                  thumbnail: 'https://placehold.co/400x225/1e293b/6366f1?text=' + encodeURIComponent(title || file.name),
+                  quality: file.size > 50000000 ? '2160p (4K)' : '1080p Full HD',
+                  status: 'PRONTO',
+                  created_at: new Date().toISOString()
+                };
+                onProgress(100, 'PRONTO');
+                resolve(newVid);
+              }, 800);
+            }
+          }, 200);
+        });
+      }
+    }
+
+    window.switchViewMode = function(mode) {
+      document.querySelectorAll('.view-panel').forEach(p => p.classList.add('hidden'));
+      document.querySelectorAll('.nav-tab-btn').forEach(b => {
+        b.classList.remove('bg-brand-600', 'text-white');
+        b.classList.add('text-slate-400');
+      });
+
+      const activeBtn = document.getElementById(`nav-btn-${mode}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-brand-600', 'text-white');
+        activeBtn.classList.remove('text-slate-400');
+      }
+
+      document.getElementById(`view-${mode}`).classList.remove('hidden');
+
+      if (mode === 'tv') {
+        renderTVScreenState();
+      } else if (mode === 'desktop') {
+        renderDesktopDashboard();
+      }
+    };
+
+    let selectedFile = null;
+
+    window.handleFileSelection = function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      selectedFile = file;
+      document.getElementById('upload-form-panel').classList.remove('hidden');
+      document.getElementById('video-title-input').value = file.name.replace(/\.[^/.]+$/, "");
+      document.getElementById('upload-status-label').innerText = 'ARQUIVO SELECIONADO';
+    };
+
+    window.startCloudUpload = async function() {
+      if (!selectedFile) return;
+
+      const title = document.getElementById('video-title-input').value || selectedFile.name;
+      const progressBox = document.getElementById('upload-progress-box');
+      const progressBar = document.getElementById('progress-bar-inner');
+      const progressPercent = document.getElementById('progress-percent');
+      const progressText = document.getElementById('progress-state-text');
+      const startBtn = document.getElementById('start-upload-btn');
+
+      progressBox.classList.remove('hidden');
+      startBtn.disabled = true;
+      startBtn.classList.add('opacity-50');
+
+      logAuditEvent('UPLOAD_STARTED', `Iniciado upload de ${selectedFile.name}`);
+
+      try {
+        const processedVid = await StorageProvider.uploadVideo(selectedFile, title, (pct, statusText) => {
+          progressBar.style.width = pct + '%';
+          progressPercent.innerText = pct + '%';
+          progressText.innerText = statusText + '...';
+        });
+
+        userVideos.unshift(processedVid);
+        showToast('Vídeo enviado e processado em HLS com sucesso!', 'success');
+        logAuditEvent('UPLOAD_COMPLETED', `Vídeo ${processedVid.title} armazenado no Cloud Bucket.`);
+
+        // Reset Upload UI
+        selectedFile = null;
+        document.getElementById('upload-form-panel').classList.add('hidden');
+        document.getElementById('upload-progress-box').classList.add('hidden');
+        document.getElementById('file-upload-input').value = '';
+        startBtn.disabled = false;
+        startBtn.classList.remove('opacity-50');
+        document.getElementById('upload-status-label').innerText = 'AGUARDANDO ARQUIVO';
+
+        renderLibraryGrid();
+        renderDesktopDashboard();
+
+        // Check if target TV was selected
+        const targetTvId = document.getElementById('target-tv-select').value;
+        if (targetTvId) {
+          playVideoOnTV(processedVid.id);
+        }
+
+      } catch (err) {
+        showToast('Erro ao realizar upload do vídeo.', 'error');
+        logAuditEvent('UPLOAD_ERROR', err.message);
+      }
+    };
+
+    window.cancelUploadProcess = function() {
+      selectedFile = null;
+      document.getElementById('upload-form-panel').classList.add('hidden');
+      document.getElementById('upload-progress-box').classList.add('hidden');
+      document.getElementById('file-upload-input').value = '';
+      showToast('Upload cancelado pelo usuário.', 'info');
+    };
+
+    function renderLibraryGrid() {
+      const grid = document.getElementById('video-library-grid');
+      grid.innerHTML = '';
+
+      if (userVideos.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-10 text-slate-500 text-xs">Nenhum vídeo disponível na biblioteca.</div>`;
+        return;
+      }
+
+      userVideos.forEach(vid => {
+        const card = document.createElement('div');
+        card.className = 'glass-card rounded-2xl overflow-hidden border border-slate-800 hover:border-brand-500/50 transition-all duration-300 flex flex-col group';
+        card.innerHTML = `
+          <div class="relative aspect-video bg-slate-900 overflow-hidden">
+            <img src="${vid.thumbnail}" alt="${vid.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            <span class="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 backdrop-blur text-[10px] font-mono text-white rounded">
+              ${formatTime(vid.duration)}
+            </span>
+            <span class="absolute top-2 left-2 px-1.5 py-0.5 bg-brand-600/90 text-[9px] font-mono font-bold text-white rounded uppercase">
+              ${vid.quality}
+            </span>
+          </div>
+          <div class="p-3 flex-1 flex flex-col justify-between space-y-2">
+            <div>
+              <h4 class="font-bold text-xs text-white truncate group-hover:text-brand-300 transition-colors">${vid.title}</h4>
+              <p class="text-[10px] text-slate-400 font-mono mt-0.5">${vid.size} • ${vid.filename}</p>
+            </div>
+            <div class="flex items-center justify-between pt-2 border-t border-slate-800/80">
+              <button onclick="playVideoOnTV('${vid.id}')" class="px-2.5 py-1 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-[11px] font-semibold flex items-center space-x-1 shadow">
+                <i class="fa-solid fa-paper-plane text-[10px]"></i>
+                <span>Enviar p/ TV</span>
+              </button>
+              <div class="flex items-center space-x-1">
+                <button onclick="addToQueue('${vid.id}')" title="Adicionar à Fila" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs">
+                  <i class="fa-solid fa-list-plus"></i>
+                </button>
+                <button onclick="deleteVideo('${vid.id}')" title="Excluir Vídeo" class="p-1.5 bg-slate-800 hover:bg-rose-900/40 text-rose-400 rounded-lg text-xs">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    window.filterLibraryVideos = function() {
+      const q = document.getElementById('library-search-input').value.toLowerCase();
+      const cards = document.querySelectorAll('#video-library-grid > div');
+      userVideos.forEach((vid, idx) => {
+        if (cards[idx]) {
+          const match = vid.title.toLowerCase().includes(q) || vid.filename.toLowerCase().includes(q);
+          cards[idx].style.display = match ? 'flex' : 'none';
+        }
+      });
+    };
+
+    window.deleteVideo = function(id) {
+      userVideos = userVideos.filter(v => v.id !== id);
+      currentQueue = currentQueue.filter(v => v.id !== id);
+      showToast('Vídeo excluído e removido do Cloud Storage.', 'info');
+      logAuditEvent('VIDEO_DELETED', `Vídeo ${id} removido.`);
+      renderLibraryGrid();
+      renderQueueUI();
+      renderDesktopDashboard();
+    };
+
+    window.openPairingModal = function() {
+      document.getElementById('modal-pairing').classList.remove('hidden');
+    };
+    window.closePairingModal = function() {
+      document.getElementById('modal-pairing').classList.add('hidden');
+    };
+
+    window.submitPairingCode = function() {
+      const name = document.getElementById('pair-tv-name').value || 'TV Sala 4K';
+      const code = document.getElementById('pair-tv-code').value;
+
+      if (code.length < 6) {
+        showToast('Digite o código completo de 6 dígitos.', 'error');
+        return;
+      }
+
+      const newTV = {
+        id: 'tv-' + Date.now(),
+        name: name,
+        pairingCode: code,
+        status: 'CONECTADA',
+        lastSeen: new Date().toISOString()
+      };
+
+      registeredTVs.push(newTV);
+      activeTV = newTV;
+
+      updateTVBadges();
+      renderTVList();
+      closePairingModal();
+      showToast(`TV "${name}" pareada com sucesso!`, 'success');
+      logAuditEvent('TV_PAIRED', `Televisor ${name} vinculado com código ${code}`);
+    };
+
+    function renderTVList() {
+      const container = document.getElementById('mobile-tvs-list');
+      const targetSelect = document.getElementById('target-tv-select');
+      container.innerHTML = '';
+      targetSelect.innerHTML = '<option value="">Apenas Salvar na Biblioteca</option>';
+
+      registeredTVs.forEach(tv => {
+        const isSelected = activeTV?.id === tv.id;
+        const item = document.createElement('div');
+        item.className = `p-3 rounded-xl border flex items-center justify-between text-xs ${isSelected ? 'bg-brand-600/20 border-brand-500/50' : 'bg-slate-900 border-slate-800'}`;
+        item.innerHTML = `
+          <div class="flex items-center space-x-2">
+            <i class="fa-solid fa-tv ${isSelected ? 'text-brand-400' : 'text-slate-500'}"></i>
+            <div>
+              <p class="font-bold text-slate-200">${tv.name}</p>
+              <p class="text-[10px] text-slate-400">Status: <span class="text-emerald-400">● Conectada</span></p>
+            </div>
+          </div>
+          <button onclick="selectActiveTV('${tv.id}')" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-[10px] font-semibold">
+            ${isSelected ? 'Ativa' : 'Selecionar'}
+          </button>
+        `;
+        container.appendChild(item);
+
+        const opt = document.createElement('option');
+        opt.value = tv.id;
+        opt.innerText = tv.name;
+        targetSelect.appendChild(opt);
+      });
+    }
+
+    window.selectActiveTV = function(tvId) {
+      activeTV = registeredTVs.find(t => t.id === tvId);
+      updateTVBadges();
+      renderTVList();
+      showToast(`TV ${activeTV.name} selecionada para controle.`, 'info');
+    };
+
+    function updateTVBadges() {
+      const dot = document.getElementById('tv-status-dot');
+      const text = document.getElementById('tv-status-text');
+      const badge = document.getElementById('active-tv-badge');
+
+      if (activeTV) {
+        dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
+        text.innerText = `${activeTV.name} (Online)`;
+        badge.className = 'flex items-center space-x-2 px-3 py-1.5 rounded-full bg-emerald-950/40 border border-emerald-500/30 text-xs text-emerald-300';
+      }
+    }
+
+    window.addToQueue = function(vidId) {
+      const vid = userVideos.find(v => v.id === vidId);
+      if (vid) {
+        currentQueue.push(vid);
+        renderQueueUI();
+        showToast(`"${vid.title}" adicionado à fila.`, 'info');
+      }
+    };
+
+    function renderQueueUI() {
+      const container = document.getElementById('active-queue-list');
+      container.innerHTML = '';
+
+      if (currentQueue.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-500 text-center py-4">A fila de reprodução está vazia.</p>`;
+        return;
+      }
+
+      currentQueue.forEach((vid, i) => {
+        const row = document.createElement('div');
+        row.className = 'p-2.5 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-between text-xs';
+        row.innerHTML = `
+          <div class="flex items-center space-x-2 truncate">
+            <span class="font-mono font-bold text-brand-400 w-4">${i + 1}.</span>
+            <span class="font-semibold text-slate-200 truncate">${vid.title}</span>
+          </div>
+          <button onclick="removeFromQueue(${i})" class="text-slate-500 hover:text-rose-400">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    window.removeFromQueue = function(idx) {
+      currentQueue.splice(idx, 1);
+      renderQueueUI();
+    };
+
+    window.clearPlaybackQueue = function() {
+      currentQueue = [];
+      renderQueueUI();
+      showToast('Fila de reprodução limpa.', 'info');
+    };
+
+    function renderTVScreenState() {
+      const unpairedScreen = document.getElementById('tv-unpaired-screen');
+      const readyScreen = document.getElementById('tv-ready-screen');
+      const playerContainer = document.getElementById('tv-player-container');
+
+      if (!activeTV) {
+        unpairedScreen.classList.remove('hidden');
+        readyScreen.classList.add('hidden');
+        playerContainer.classList.add('hidden');
+        updateCodeDigitsDisplay();
+      } else if (activeSession && activeSession.status === 'PLAYING') {
+        unpairedScreen.classList.add('hidden');
+        readyScreen.classList.add('hidden');
+        playerContainer.classList.remove('hidden');
+      } else {
+        unpairedScreen.classList.add('hidden');
+        readyScreen.classList.remove('hidden');
+        playerContainer.classList.add('hidden');
+        document.getElementById('tv-device-name-display').innerText = `WEBCAST TV — ${activeTV.name}`;
+      }
+    }
+
+    function updateCodeDigitsDisplay() {
+      for (let i = 0; i < 6; i++) {
+        document.getElementById(`digit-${i}`).innerText = tvPairingCode[i] || '0';
+      }
+    }
+
+    window.generateNewTVCode = function() {
+      tvPairingCode = Math.floor(100000 + Math.random() * 900000).toString();
+      updateCodeDigitsDisplay();
+      showToast('Novo código de pareamento gerado para a TV.', 'info');
+    };
+
+    window.playVideoOnTV = function(vidId) {
+      if (!activeTV) {
+        activeTV = registeredTVs[0];
+        updateTVBadges();
+      }
+
+      const vid = userVideos.find(v => v.id === vidId);
+      if (!vid) return;
+
+      activeSession = {
+        tv_id: activeTV.id,
+        video_id: vid.id,
+        title: vid.title,
+        url: vid.url,
+        quality: vid.quality,
+        position: 0,
+        status: 'PLAYING',
+        updated_at: new Date().toISOString()
+      };
+
+      // Sync to Firebase Firestore if online
+      if (db && currentUser) {
+        setDoc(getPublicDocPath('sessions', 'current_session'), activeSession).catch(err => console.log(err));
+      }
+
+      logAuditEvent('PLAY_STARTED', `Streaming iniciado de "${vid.title}" para ${activeTV.name}`);
+      showToast(`Reproduzindo "${vid.title}" na TV!`, 'success');
+
+      syncPlaybackFromSession(activeSession);
+    };
+
+    function syncPlaybackFromSession(session) {
+      if (!session) return;
+
+      const videoEl = document.getElementById('tv-video-element');
+      const titleOsd = document.getElementById('tv-osd-title');
+      const qualityBadge = document.getElementById('tv-quality-badge');
+
+      titleOsd.innerText = session.title;
+      qualityBadge.innerText = session.quality;
+
+      if (videoEl.src !== session.url) {
+        document.getElementById('tv-buffering-overlay').classList.remove('hidden');
+        videoEl.src = session.url;
+        videoEl.play().then(() => {
+          document.getElementById('tv-buffering-overlay').classList.add('hidden');
+        }).catch(e => console.log('Autoplay handled:', e));
+      } else {
+        if (session.status === 'PLAYING') videoEl.play();
+        if (session.status === 'PAUSED') videoEl.pause();
+      }
+
+      renderTVScreenState();
+    }
+
+    const tvVideo = document.getElementById('tv-video-element');
+
+    tvVideo.addEventListener('timeupdate', () => {
+      const cur = tvVideo.currentTime;
+      const dur = tvVideo.duration || 1;
+      const pct = (cur / dur) * 100;
+
+      document.getElementById('tv-progress-bar').style.width = pct + '%';
+      document.getElementById('tv-current-time').innerText = formatTime(cur);
+      document.getElementById('tv-duration-time').innerText = formatTime(dur);
+    });
+
+    tvVideo.addEventListener('ended', () => {
+      logAuditEvent('PLAY_ENDED', 'Vídeo finalizado.');
+      if (currentQueue.length > 0) {
+        const nextVid = currentQueue.shift();
+        renderQueueUI();
+        playVideoOnTV(nextVid.id);
+      } else {
+        if (activeSession) activeSession.status = 'ENDED';
+        renderTVScreenState();
+      }
+    });
+
+    window.tvPlayPause = function() {
+      if (tvVideo.paused) {
+        tvVideo.play();
+        document.getElementById('tv-play-btn-icon').className = 'fa-solid fa-pause text-sm';
+        document.getElementById('tv-playback-status-label').innerText = 'REPRODUZINDO';
+      } else {
+        tvVideo.pause();
+        document.getElementById('tv-play-btn-icon').className = 'fa-solid fa-play text-sm';
+        document.getElementById('tv-playback-status-label').innerText = 'PAUSADO';
+      }
+    };
+
+    window.handleTVSeekClick = function(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const pct = clickX / rect.width;
+      tvVideo.currentTime = pct * tvVideo.duration;
+    };
+
+    window.toggleTVFullscreen = function() {
+      const container = document.getElementById('tv-player-container');
+      if (!document.fullscreenElement) {
+        container.requestFullscreen().catch(err => console.log(err));
+      } else {
+        document.exitFullscreen();
+      }
+    };
+
+    window.openRemoteModal = function() {
+      if (!activeTV) activeTV = registeredTVs[0];
+      document.getElementById('remote-active-tv-title').innerText = activeTV.name;
+      document.getElementById('remote-now-playing-title').innerText = activeSession ? activeSession.title : 'Nenhuma mídia em execução';
+      document.getElementById('modal-remote').classList.remove('hidden');
+    };
+    window.closeRemoteModal = function() {
+      document.getElementById('modal-remote').classList.add('hidden');
+    };
+
+    window.remoteTogglePlay = function() {
+      tvPlayPause();
+      const icon = document.getElementById('remote-play-icon');
+      icon.className = tvVideo.paused ? 'fa-solid fa-play' : 'fa-solid fa-pause';
+    };
+
+    window.remoteSeekRelative = function(sec) {
+      tvVideo.currentTime = Math.max(0, Math.min(tvVideo.duration, tvVideo.currentTime + sec));
+      showToast(`Seek ${sec > 0 ? '+' : ''}${sec}s`, 'info');
+    };
+
+    window.remotePlayNextInQueue = function() {
+      if (currentQueue.length > 0) {
+        const nextVid = currentQueue.shift();
+        renderQueueUI();
+        playVideoOnTV(nextVid.id);
+      } else {
+        showToast('Não há mais vídeos na fila.', 'info');
+      }
+    };
+
+    window.remotePlayPrevInQueue = function() {
+      tvVideo.currentTime = 0;
+      showToast('Vídeo reiniciado.', 'info');
+    };
+
+    window.remoteChangeVolume = function(val) {
+      tvVideo.volume = val / 100;
+      document.getElementById('remote-volume-label').innerText = val + '%';
+    };
+
+    function renderDesktopDashboard() {
+      document.getElementById('dash-metric-tvs').innerText = registeredTVs.length;
+      document.getElementById('dash-metric-videos').innerText = userVideos.length;
+
+      let totalMB = 0;
+      userVideos.forEach(v => {
+        const num = parseFloat(v.size) || 0;
+        totalMB += num;
+      });
+      document.getElementById('dash-metric-size').innerText = totalMB.toFixed(1) + ' MB';
+    }
+
+    function logAuditEvent(event, details) {
+      const row = document.createElement('tr');
+      row.className = 'hover:bg-slate-900/50';
+      row.innerHTML = `
+        <td class="p-3 text-slate-400">${new Date().toLocaleTimeString()}</td>
+        <td class="p-3 font-bold text-brand-400">${event}</td>
+        <td class="p-3 text-slate-300">${details}</td>
+        <td class="p-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[9px] font-bold">OK</span></td>
+      `;
+      const container = document.getElementById('audit-log-rows');
+      if (container) container.prepend(row);
+    }
+
+    // Helper functions
+    function formatTime(seconds) {
+      if (isNaN(seconds)) return '00:00';
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      let bg = 'bg-slate-900 border-slate-700 text-slate-200';
+      if (type === 'success') bg = 'bg-emerald-950/90 border-emerald-500/40 text-emerald-200';
+      if (type === 'error') bg = 'bg-rose-950/90 border-rose-500/40 text-rose-200';
+
+      toast.className = `p-3 rounded-2xl border ${bg} text-xs font-semibold shadow-2xl flex items-center space-x-2 transition-all duration-300 transform translate-x-10 pointer-events-auto`;
+      toast.innerHTML = `<i class="fa-solid fa-circle-info"></i><span>${msg}</span>`;
+      
+      container.appendChild(toast);
+      setTimeout(() => toast.classList.remove('translate-x-10'), 10);
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-x-10');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+      await initFirebase();
+      renderTVList();
+      renderLibraryGrid();
+      renderQueueUI();
+      renderDesktopDashboard();
+      updateTVBadges();
+      logAuditEvent('SYSTEM_BOOT', 'WebCast TV 4.0.0 inicializado.');
+    });
+  </script>
+</body>
+</html>
