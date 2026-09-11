@@ -12,7 +12,6 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         body { background-color: #0f172a; color: #f8fafc; font-family: ui-sans-serif, system-ui, sans-serif; }
-        .tv-focus:focus { outline: 4px solid #3b82f6; outline-offset: 4px; }
         .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
     </style>
 </head>
@@ -26,7 +25,7 @@
                 <h1 class="text-xl font-bold tracking-wider">WebCast <span class="text-blue-500">TV</span> <span class="text-xs bg-blue-900/60 text-blue-300 px-2 py-0.5 rounded">v4.0.0</span></h1>
             </div>
             
-            <!-- SELETOR DE MODO DE INTERFACE (PARA TESTES EM UM DISPOSITIVO) -->
+            <!-- SELETOR DE MODO DE INTERFACE -->
             <div class="flex bg-slate-800 p-1 rounded-lg text-sm border border-slate-700">
                 <button onclick="switchView('mobile')" id="btn-view-mobile" class="px-3 py-1.5 rounded-md font-medium transition-all bg-blue-600 text-white">
                     <i class="fa-solid fa-mobile-screen mr-1.5"></i> Painel Mobile
@@ -49,7 +48,7 @@
         <section id="view-mobile" class="space-y-6">
             
             <!-- Status de Conexão com a TV -->
-            <div class="glass p-4 rounded-xl flex items-center justify-between border-l-4 border-l-yellow-500" id="mobile-connection-bar">
+            <div class="glass p-4 rounded-xl flex items-center justify-between border-l-4 border-l-yellow-500 transition-all" id="mobile-connection-bar">
                 <div class="flex items-center gap-3">
                     <div class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse" id="tv-status-dot"></div>
                     <div>
@@ -57,8 +56,8 @@
                         <p class="font-semibold text-sm" id="connected-tv-name">Nenhuma TV conectada</p>
                     </div>
                 </div>
-                <button onclick="openPairingModal()" class="bg-blue-600 hover:bg-blue-500 text-xs px-3 py-2 rounded-lg font-semibold transition">
-                    <i class="fa-solid fa-link mr-1"></i> Parear TV
+                <button onclick="openPairingModal()" class="bg-blue-600 hover:bg-blue-500 text-xs px-3 py-2 rounded-lg font-semibold transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-qrcode"></i> Parear TV
                 </button>
             </div>
 
@@ -133,31 +132,40 @@
         <!-- ========================================== -->
         <!-- 2. INTERFACE DESTINADA À SMART TV (BIG SCREEN) -->
         <!-- ========================================== -->
-        <section id="view-tv" class="hidden relative min-h-[80vh] flex flex-col justify-center items-center rounded-2xl overflow-hidden bg-black border border-slate-800 shadow-2xl">
+        <section id="view-tv" class="hidden relative min-h-[80vh] flex flex-col justify-center items-center rounded-2xl overflow-hidden bg-black border border-slate-800 shadow-2xl p-6">
             
-            <!-- TELA DE PAREAMENTO (Exibida quando não pareado) -->
-            <div id="tv-pairing-screen" class="text-center p-8 space-y-6 max-w-xl">
-                <div class="inline-flex items-center justify-center p-4 bg-blue-600/20 rounded-full text-blue-400 mb-2">
-                    <i class="fa-solid fa-tv text-5xl"></i>
+            <!-- TELA DE PAREAMENTO COM QR CODE E PIN -->
+            <div id="tv-pairing-screen" class="text-center space-y-6 max-w-2xl w-full">
+                <div class="inline-flex items-center justify-center p-3 bg-blue-600/20 rounded-full text-blue-400 mb-1">
+                    <i class="fa-solid fa-tv text-4xl"></i>
                 </div>
                 <h2 class="text-3xl font-extrabold tracking-tight">WEBCAST TV 4.0.0</h2>
-                <p class="text-slate-400 text-sm">Esta TV ainda não está conectada à sua conta.</p>
+                <p class="text-slate-400 text-sm">Conecte seu celular para transmitir vídeos diretamente da nuvem.</p>
                 
-                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-inner space-y-3">
-                    <span class="text-xs uppercase tracking-widest text-slate-500 font-bold">Código de Pareamento</span>
-                    <div id="tv-pairing-code-display" class="text-4xl md:text-6xl font-mono font-black tracking-widest text-blue-400">
-                        <!-- Gerado via JS ex: 7 4 2 9 1 8 -->
-                        ------
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-900 border border-slate-800 p-6 rounded-2xl items-center text-left">
+                    <!-- Opção 1: QR Code -->
+                    <div class="flex flex-col items-center text-center p-3 border-b md:border-b-0 md:border-r border-slate-800">
+                        <span class="text-xs uppercase tracking-widest text-blue-400 font-bold mb-3">Opção 1: QR Code</span>
+                        <div class="bg-white p-2 rounded-xl shadow-lg mb-2">
+                            <img id="tv-qr-code-img" src="" alt="QR Code de Pareamento" class="w-40 h-40 object-contain">
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">Aponta a câmera do celular para conectar instantaneamente</p>
                     </div>
-                    <button onclick="generateNewTVCode()" class="text-xs text-slate-500 hover:text-slate-300 underline pt-2">
-                        <i class="fa-solid fa-rotate-right mr-1"></i> Gerar novo código
-                    </button>
+
+                    <!-- Opção 2: Código PIN -->
+                    <div class="flex flex-col items-center text-center p-3 space-y-3">
+                        <span class="text-xs uppercase tracking-widest text-slate-400 font-bold">Opção 2: Código PIN</span>
+                        <div id="tv-pairing-code-display" class="text-3xl md:text-4xl font-mono font-black tracking-widest text-blue-400 bg-slate-950 px-4 py-3 rounded-xl border border-slate-800 w-full">
+                            ------
+                        </div>
+                        <button onclick="generateNewTVCode()" class="text-xs text-slate-500 hover:text-slate-300 underline pt-1">
+                            <i class="fa-solid fa-rotate-right mr-1"></i> Gerar novo código
+                        </button>
+                    </div>
                 </div>
-                
-                <p class="text-xs text-slate-500">Abra o WebCast no celular, toque em <b>Parear TV</b> e digite este código.</p>
             </div>
 
-            <!-- TELA DE AGUARDANDO COMANDO (Exibida após o pareamento) -->
+            <!-- TELA DE AGUARDANDO COMANDO -->
             <div id="tv-standby-screen" class="hidden text-center space-y-4">
                 <div class="w-4 h-4 rounded-full bg-emerald-500 animate-ping mx-auto"></div>
                 <h3 class="text-2xl font-bold text-slate-200">WEBCAST TV <span class="text-blue-500">● CONECTADA</span></h3>
@@ -168,7 +176,7 @@
             <div id="tv-player-container" class="hidden absolute inset-0 bg-black flex items-center justify-center w-full h-full">
                 <video id="tv-video-element" class="w-full h-full object-contain"></video>
                 
-                <!-- OSD Overlay (Controles flutuantes da TV que somem) -->
+                <!-- OSD Overlay -->
                 <div id="tv-osd" class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 p-8 flex flex-col justify-between transition-opacity duration-500 opacity-100">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center gap-3">
@@ -211,7 +219,7 @@
             </div>
 
             <div class="glass p-5 rounded-xl space-y-3">
-                <h3 class="font-bold text-lg">Log de Auditoria da Nuvem (Realtime Events)</h3>
+                <h3 class="font-bold text-lg">Log de Auditoria da Nuvem</h3>
                 <div id="audit-logs" class="bg-slate-950 p-4 rounded-lg font-mono text-xs text-slate-400 space-y-1 h-48 overflow-y-auto border border-slate-800">
                     <div>[SYSTEM] Sistema WebCast TV 4.0.0 inicializado.</div>
                 </div>
@@ -224,7 +232,7 @@
     <div id="pairing-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
         <div class="glass p-6 rounded-2xl max-w-sm w-full space-y-4 border border-slate-700">
             <h3 class="text-lg font-bold text-center">Parear com a TV</h3>
-            <p class="text-xs text-slate-400 text-center">Digite o código de 6 dígitos que está sendo exibido na tela da televisão.</p>
+            <p class="text-xs text-slate-400 text-center">Digite o código PIN de 6 dígitos que aparece na tela da TV.</p>
             
             <form onsubmit="handlePairingSubmit(event)" class="space-y-4">
                 <input type="text" id="pairing-code-input" maxlength="6" placeholder="000000" class="w-full bg-slate-900 border border-slate-700 text-center text-2xl font-mono tracking-widest py-3 rounded-xl text-white focus:border-blue-500 outline-none">
@@ -236,48 +244,52 @@
         </div>
     </div>
 
-    <!-- SCRIPT DE LÓGICA E SINCRONIZAÇÃO EM TEMPO REAL -->
+    <!-- SCRIPT DE LÓGICA E SINCRONIZAÇÃO DE COMUNICAÇÃO -->
     <script>
-        // CANAL DE COMUNICAÇÃO EM TEMPO REAL ENTRE ABAS/DISPOSITIVOS
         const channel = new BroadcastChannel('webcast_tv_4_channel');
         let currentTVCode = "";
         let isTVPaired = false;
         let hlsInstance = null;
 
-        // BIBLIOTECA INICIAL DE EXEMPLO
         let videoLibrary = [
             { id: '1', title: 'Big Buck Bunny (HLS Stream)', duration: '09:56', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', quality: '1080p HLS' },
             { id: '2', title: 'Sintel Trailer (MP4 Direct)', duration: '00:52', url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4', quality: '720p MP4' }
         ];
 
-        // INICIALIZAÇÃO
         document.addEventListener('DOMContentLoaded', () => {
             generateNewTVCode();
             renderLibrary();
             setupChannelListeners();
-            updateDashboard();
+            checkUrlAutoPairing();
         });
 
-        // NAVEGAÇÃO ENTRE VISÕES (MOBILE / TV / DESKTOP)
-        function switchView(viewName) {
-            ['mobile', 'tv', 'desktop'].forEach(v => {
-                document.getElementById(`view-${v}`).classList.add('hidden');
-                document.getElementById(`btn-view-${v}`).className = "px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition-all";
-            });
-
-            document.getElementById(`view-${viewName}`).classList.remove('hidden');
-            document.getElementById(`btn-view-${viewName}`).className = "px-3 py-1.5 rounded-md font-medium transition-all bg-blue-600 text-white";
-            logAudit(`Visualização alterada para: ${viewName.toUpperCase()}`);
+        // 1. AUTO-PAREAMENTO VIA LINK DO QR CODE
+        function checkUrlAutoPairing() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const pairCode = urlParams.get('pair');
+            if (pairCode) {
+                switchView('mobile');
+                setTimeout(() => submitPairingCode(pairCode), 500);
+            }
         }
 
-        // 1. LÓGICA DE PAREAMENTO DINÂMICO DE 6 DÍGITOS
+        // 2. PAREAMENTO POR QR CODE E PIN DINÂMICO
         function generateNewTVCode() {
             currentTVCode = Math.floor(100000 + Math.random() * 900000).toString();
+            
+            // Exibe o PIN na TV
             const displayEl = document.getElementById('tv-pairing-code-display');
-            if (displayEl) {
-                displayEl.innerText = currentTVCode.split('').join(' ');
-            }
-            logAudit(`Novo código de pareamento gerado na TV: ${currentTVCode}`);
+            if (displayEl) displayEl.innerText = currentTVCode.split('').join(' ');
+
+            // Gera o QR Code com a URL exata de pareamento
+            const baseUrl = window.location.href.split('?')[0];
+            const pairingUrl = `${baseUrl}?pair=${currentTVCode}`;
+            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(pairingUrl)}&color=3b82f6&bgcolor=0f172a`;
+            
+            const qrImg = document.getElementById('tv-qr-code-img');
+            if (qrImg) qrImg.src = qrApiUrl;
+
+            logAudit(`Código PIN gerado na TV: ${currentTVCode}`);
         }
 
         function openPairingModal() {
@@ -291,53 +303,60 @@
         function handlePairingSubmit(e) {
             e.preventDefault();
             const inputCode = document.getElementById('pairing-code-input').value.trim();
-
             if (inputCode.length !== 6) {
                 alert('Digite o código completo de 6 dígitos.');
                 return;
             }
-
-            // Envia evento de tentativa de pareamento pelo canal em tempo real
-            channel.postMessage({ type: 'PAIR_ATTEMPT', code: inputCode });
-            
-            // Valida localmente também se estiver na mesma aba
-            validatePairing(inputCode);
+            submitPairingCode(inputCode);
         }
 
-        function validatePairing(code) {
+        function submitPairingCode(code) {
+            // Envia o pedido de pareamento pela rede realtime para a TV responder
+            channel.postMessage({ type: 'PAIR_REQUEST', code: code });
+            
+            // Caso esteja testando na mesma aba
             if (code === currentTVCode) {
-                isTVPaired = true;
-                closePairingModal();
-                
-                // Atualiza Mobile UI
-                document.getElementById('connected-tv-name').innerText = "TV Sala (Conectada)";
-                document.getElementById('tv-status-dot').className = "w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
-                document.getElementById('mobile-connection-bar').className = "glass p-4 rounded-xl flex items-center justify-between border-l-4 border-l-emerald-500";
-
-                // Atualiza TV UI
-                document.getElementById('tv-pairing-screen').classList.add('hidden');
-                document.getElementById('tv-standby-screen').classList.remove('hidden');
-
-                // Notifica outras abas
-                channel.postMessage({ type: 'PAIR_SUCCESS', tvName: 'TV Sala' });
-                logAudit("PAREAMENTO CONCLUÍDO COM SUCESSO.");
-            } else {
-                alert("Código de pareamento incorreto. Verifique o código exibido na TV.");
+                confirmPairingSuccess('TV Sala');
             }
         }
 
-        // 2. SINCRONIZAÇÃO EM TEMPO REAL (REALTIME MESSAGES)
+        function confirmPairingSuccess(tvName) {
+            isTVPaired = true;
+            closePairingModal();
+            
+            // Atualiza Mobile UI
+            document.getElementById('connected-tv-name').innerText = `${tvName} (Conectada)`;
+            document.getElementById('tv-status-dot').className = "w-3 h-3 rounded-full bg-emerald-500 animate-pulse";
+            document.getElementById('mobile-connection-bar').className = "glass p-4 rounded-xl flex items-center justify-between border-l-4 border-l-emerald-500";
+
+            // Atualiza TV UI
+            document.getElementById('tv-pairing-screen').classList.add('hidden');
+            document.getElementById('tv-standby-screen').classList.remove('hidden');
+
+            logAudit("PAREAMENTO CONCLUÍDO COM SUCESSO!");
+        }
+
+        // 3. COMUNICAÇÃO REALTIME CORRIGIDA
         function setupChannelListeners() {
             channel.onmessage = (event) => {
                 const data = event.data;
-                logAudit(`Evento Realtime Recebido: ${data.type}`);
+                logAudit(`Evento Recebido: ${data.type}`);
 
                 switch (data.type) {
-                    case 'PAIR_ATTEMPT':
-                        validatePairing(data.code);
+                    case 'PAIR_REQUEST':
+                        // A TV valida se o código enviado pelo celular bate com o PIN dela
+                        if (data.code === currentTVCode) {
+                            confirmPairingSuccess('TV Sala');
+                            channel.postMessage({ type: 'PAIR_APPROVED', tvName: 'TV Sala' });
+                        } else {
+                            channel.postMessage({ type: 'PAIR_REJECTED' });
+                        }
                         break;
-                    case 'PAIR_SUCCESS':
-                        document.getElementById('connected-tv-name').innerText = data.tvName;
+                    case 'PAIR_APPROVED':
+                        confirmPairingSuccess(data.tvName);
+                        break;
+                    case 'PAIR_REJECTED':
+                        alert("Código incorreto! Verifique o PIN de 6 dígitos exibido na TV.");
                         break;
                     case 'PLAY_VIDEO':
                         playVideoOnTV(data.video);
@@ -349,7 +368,7 @@
             };
         }
 
-        // 3. UPLOAD DE VÍDEO (SIMULAÇÃO PROFISSIONAL)
+        // 4. UPLOAD DE VÍDEO
         function handleFileSelect(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -369,9 +388,7 @@
                 progressBar.style.width = `${progress}%`;
                 percentLabel.innerText = `${progress}%`;
 
-                if (progress === 70) {
-                    statusLabel.innerText = "PROCESSANDO HLS...";
-                }
+                if (progress === 70) statusLabel.innerText = "PROCESSANDO HLS...";
 
                 if (progress >= 100) {
                     clearInterval(interval);
@@ -389,13 +406,13 @@
                         renderLibrary();
                         progressContainer.classList.add('hidden');
                         progressBar.style.width = '0%';
-                        logAudit(`Upload concluído e adicionado à biblioteca: ${file.name}`);
+                        logAudit(`Upload concluído: ${file.name}`);
                     }, 800);
                 }
             }, 250);
         }
 
-        // 4. RENDERIZAÇÃO DA BIBLIOTECA
+        // 5. BIBLIOTECA E STREAMING
         function renderLibrary() {
             const listEl = document.getElementById('video-library-list');
             listEl.innerHTML = '';
@@ -422,10 +439,9 @@
             updateDashboard();
         }
 
-        // 5. ENVIO E REPRODUÇÃO DE VÍDEO NA TV
         function sendVideoToTV(videoId) {
             if (!isTVPaired) {
-                alert("Por favor, pareie o aplicativo com a TV antes de enviar um vídeo.");
+                alert("Por favor, pareie com a TV antes de enviar um vídeo.");
                 openPairingModal();
                 return;
             }
@@ -433,7 +449,7 @@
             const video = videoLibrary.find(v => v.id === videoId);
             if (video) {
                 channel.postMessage({ type: 'PLAY_VIDEO', video: video });
-                playVideoOnTV(video); // Executa localmente caso a visão da TV esteja aberta na mesma tela
+                playVideoOnTV(video);
             }
         }
 
@@ -457,7 +473,6 @@
                 videoEl.play();
             }
 
-            // Atualiza barra de progresso da TV
             videoEl.ontimeupdate = () => {
                 const pct = (videoEl.currentTime / videoEl.duration) * 100;
                 document.getElementById('tv-progress-bar').style.width = `${pct}%`;
@@ -469,7 +484,7 @@
             logAudit(`Reproduzindo na TV: ${video.title}`);
         }
 
-        // 6. CONTROLE REMOTO VIRTUAL
+        // 6. CONTROLE REMOTO
         function sendRemoteCommand(action, value = null) {
             channel.postMessage({ type: 'COMMAND', action: action, value: value });
             handleRemoteAction(action, value);
@@ -490,9 +505,7 @@
                     }
                     break;
                 case 'SEEK':
-                    if (videoEl.duration) {
-                        videoEl.currentTime = (value / 100) * videoEl.duration;
-                    }
+                    if (videoEl.duration) videoEl.currentTime = (value / 100) * videoEl.duration;
                     break;
                 case 'VOLUME':
                     videoEl.volume = value / 100;
@@ -503,7 +516,15 @@
         function sendSeek(val) { sendRemoteCommand('SEEK', val); }
         function sendVolume(val) { sendRemoteCommand('VOLUME', val); }
 
-        // UTILITÁRIOS E LOGS
+        function switchView(viewName) {
+            ['mobile', 'tv', 'desktop'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+                document.getElementById(`btn-view-${v}`).className = "px-3 py-1.5 rounded-md font-medium text-slate-400 hover:text-white transition-all";
+            });
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            document.getElementById(`btn-view-${viewName}`).className = "px-3 py-1.5 rounded-md font-medium transition-all bg-blue-600 text-white";
+        }
+
         function formatTime(secs) {
             const m = Math.floor(secs / 60);
             const s = Math.floor(secs % 60);
